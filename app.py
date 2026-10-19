@@ -48,7 +48,6 @@ if 'vocab' not in st.session_state:
 if 'users' not in st.session_state:
     st.session_state.users = load_users()
 
-# Нэвтрэх төлөвийг алдахгүй байх баталгаажуулалт (Query params ашиглах)
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_info = None
@@ -92,7 +91,12 @@ else:
     if user['role'] == 'Багш':
         st.header("👨‍🏫 Багшийн удирдлагын самбар")
         
-        tab1, tab2, tab3 = st.tabs(["➕ Нэг нэгээр үг нэмэх", "📁 Файлаар (CSV/Excel) олон үг оруулах", "👥 Хэрэглэгч удирдах"])
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "➕ Нэг нэгээр үг нэмэх", 
+            "✏️ Үг засах / 🗑️ Устгах", 
+            "📁 Файлаар олон үг оруулах", 
+            "👥 Хэрэглэгч удирдах"
+        ])
         
         with tab1:
             st.subheader("Физикийн шинэ нэр томьёо нэмэх")
@@ -113,6 +117,48 @@ else:
                     st.warning("Англи болон Монгол утгыг заавал бөглөнө үү.")
                     
         with tab2:
+            st.subheader("Мөрийн дугаараар үг засах эсвэл устгах")
+            
+            # Хүснэгт хэлбэрээр индекс дугаартай нь харуулах
+            df_vocab = pd.DataFrame(st.session_state.vocab)
+            df_vocab.index = df_vocab.index + 1  # 1-ээс эхлүүлэх
+            st.dataframe(df_vocab, use_container_width=True)
+            
+            st.divider()
+            col_edit, col_del = st.columns(2)
+            
+            with col_edit:
+                st.markdown("### ✏️ Үг засах")
+                edit_idx = st.number_input("Засах үгийн дугаар (Index)", min_value=1, max_value=max(len(st.session_state.vocab), 1), step=1)
+                
+                # Тухайн үгийн одоо байгаа утгыг харуулах
+                curr_item = st.session_state.vocab[edit_idx - 1]
+                new_en = st.text_input("Шинэ Англи үг", value=curr_item['en'])
+                new_mn = st.text_input("Шинэ Монгол утга", value=curr_item['mn'])
+                new_desc = st.text_area("Шинэ тайлбар", value=curr_item['description'])
+                
+                if st.button("Өөрчлөлтийг хадгалах"):
+                    st.session_state.vocab[edit_idx - 1] = {
+                        "en": new_en.strip(),
+                        "mn": new_mn.strip(),
+                        "description": new_desc.strip()
+                    }
+                    save_data(st.session_state.vocab)
+                    st.success(f"{edit_idx}-р дугаартай үг амжилттай шинэчлэгдлээ!")
+                    st.rerun()
+
+            with col_del:
+                st.markdown("### 🗑️ Үг устгах")
+                del_idx = st.number_input("Устгах үгийн дугаар (Index)", min_value=1, max_value=max(len(st.session_state.vocab), 1), step=1, key="del_input")
+                
+                st.warning(f"Та {del_idx}-р дугаартай үгийг устгахдаа итгэлтэй байна уу?")
+                if st.button("Энэ үгийг устгах"):
+                    removed = st.session_state.vocab.pop(del_idx - 1)
+                    save_data(st.session_state.vocab)
+                    st.success(f"'{removed['en']}' үг амжилттай устгагдлаа!")
+                    st.rerun()
+
+        with tab3:
             st.subheader("Файлаар олон үг оруулах")
             uploaded_file = st.file_uploader("Файлаа сонгох / чирж оруулах", type=['csv', 'xlsx'])
             
@@ -141,7 +187,7 @@ else:
                 except Exception as e:
                     st.error(f"Алдаа гарлаа: {e}")
 
-        with tab3:
+        with tab4:
             st.subheader("Шинэ хэрэглэгч бүртгэх")
             new_user = st.text_input("Логин нэр").strip().lower()
             new_pass = st.text_input("Нууц үг").strip()
@@ -156,7 +202,7 @@ else:
                 else:
                     st.warning("Бүх талбарыг бөглөнө үү.")
 
-    # --- СУРАГЧИЙН ЦЭС (Тест болон Эрэмбэлэгддэг Толь бичиг) ---
+    # --- СУРАГЧИЙН ЦЭС ---
     else:
         st.header("🎓 Сурагчийн суралцах болон сорилтын хэсэг")
         
@@ -199,14 +245,11 @@ else:
 
         with tab_s2:
             st.subheader("📖 Физикийн нэр томьёоны толь бичиг")
-            
-            # Хайлт болон эрэмбэлэх хэсэг
             search_query = st.text_input("🔍 Хайх үг (Англи эсвэл Монголоор)").strip().lower()
             sort_option = st.selectbox("Эрэмбэлэх хэлбэр:", ["Англи үгээр (A-Z)", "Монгол үгээр (А-Я)"])
             
             df_vocab = pd.DataFrame(st.session_state.vocab)
             
-            # Хайлт хийх шүүлтүүр
             if search_query:
                 df_vocab = df_vocab[
                     df_vocab['en'].str.lower().str.contains(search_query) | 
@@ -214,11 +257,10 @@ else:
                     df_vocab['description'].str.lower().str.contains(search_query)
                 ]
             
-            # Сортлох / эрэмбэлэх
             if sort_option == "Англи үгээр (A-Z)":
                 df_vocab = df_vocab.sort_values(by='en', ascending=True)
             else:
                 df_vocab = df_vocab.sort_values(by='mn', ascending=True)
                 
-            st.write((f"Хуудаглалт: Нийт {len(df_vocab)} үг олдлоо."))
+            st.write(f"Нийт {len(df_vocab)} үг олдлоо.")
             st.dataframe(df_vocab, use_container_width=True, hide_index=True)
