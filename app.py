@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Хуудасны тохиргоо
-st.set_page_config(page_title="📚 Физикийн ухаалаг систем", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Физикийн ухаалаг систем", page_icon="📚", layout="wide")
 
 # Суурь хэрэглэгчдийн дата (Нэвтрэх нэр: Нууц үг, Эрх)
 if 'users' not in st.session_state:
@@ -27,7 +27,7 @@ if 'logged_in' not in st.session_state:
 
 # ---- НЭВТРЭХ ХЭСЭГ ----
 if not st.session_state.logged_in:
-    st.title("Физикийн ухаалаг систем")
+    st.title("📚 Физикийн ухаалаг систем")
     st.subheader("🔐Системд нэвтрэх")
     
     col1, col2 = st.columns([1, 2])
@@ -64,7 +64,7 @@ else:
     if user['role'] == 'Багш':
         st.header("👨‍🏫 Багшийн удирдлагын самбар")
         
-        tab1, tab2, tab3 = st.tabs(["➕ Нэг нэгээр үг нэмэх", "📁 Файлаар (CSV/Excel) олон үг оруулах", "👥 Хэрэглэгч удирдах"])
+        tab1, tab2, tab3 = st.tabs(["➕ Үг нэмэх", "📁 Файлаар үг оруулах", "👥 Хэрэглэгч удирдах"])
         
         with tab1:
             st.subheader("Физикийн шинэ нэр томьёо нэмэх")
