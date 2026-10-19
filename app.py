@@ -15,9 +15,9 @@ if 'users' not in st.session_state:
 # Суурь физик үгсийн сан
 if 'vocab' not in st.session_state:
     st.session_state.vocab = [
-        {"en": "Velocity", "mn": "Хурд", "added_by": "Систем"},
-        {"en": "Acceleration", "mn": "Хурдасгал", "added_by": "Систем"},
-        {"en": "Force", "mn": "Хүч", "added_by": "Систем"}
+        {"English term": "Reflection of light", "Монгол нэршил": "Гэрлийн ойлт", "added_by": "Систем"},
+        {"English term": "Plane mirror", "Монгол нэршил": "Хавтгай толь", "added_by": "Систем"},
+        {"English term": "Spherical mirrors", "Монгол нэршил": "Бөмбөлөг толь", "added_by": "Систем"}
     ]
 
 # Нэвтрэх төлөв
