@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 
 # Хуудасны тохиргоо
-st.set_page_config(page_title="Физикийн ухаалаг систем", page_icon="📚", layout="wide")
+st.set_page_config(page_title="Физикийн ухаалаг систем", page_icon="⚡", layout="wide")
 
-# Суурь хэрэглэгчдийн дата (Нэвтрэх нэр: Нууц үг, Эрх)
+# Суурь хэрэглэгчдийн дата
 if 'users' not in st.session_state:
     st.session_state.users = {
         'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'Үндсэн Багш'},
@@ -12,12 +12,17 @@ if 'users' not in st.session_state:
         'suragch2': {'password': 'pass2', 'role': 'Сурагч', 'name': 'Сурагч 2'}
     }
 
-# Суурь физик үгсийн сан
+# Суурь физик үгсийн сан (Англи, Монгол, Тайлбар)
 if 'vocab' not in st.session_state:
     st.session_state.vocab = [
-        {"English term": "Reflection of light", "Монгол нэршил": "Гэрлийн ойлт", "added_by": "Систем"},
-        {"English term": "Plane mirror", "Монгол нэршил": "Хавтгай толь", "added_by": "Систем"},
-        {"English term": "Spherical mirrors", "Монгол нэршил": "Бөмбөлөг толь", "added_by": "Систем"}
+        {"en": "Reflection", "mn": "Гэрлийн ойлт", "description": "Гэрлийн цацраг гадаргуугаас буцаж ойх үзэгдэл."},
+        {"en": "Plane Mirror", "mn": "Хавтгай толь", "description": "Тэгшхэн, гөлгөр гадаргуутай, гэрлийг жигд ойлгогч хэрэглэгдэхүүн."},
+        {"en": "Incident Ray", "mn": "Тусах цацраг", "description": "Толь эсвэл гадаргуу руу чиглэн ирж буй гэрлийн цацраг."},
+        {"en": "Reflected Ray", "mn": "Ойсон цацраг", "description": "Гадаргуугаас ойж буцаж буй гэрлийн цацраг."},
+        {"en": "Normal", "mn": "Нормаль", "description": "Тусах цэг дээр тольны гадаргуутай перпендикуляр татсан хийсвэр шугам."},
+        {"en": "Refraction", "mn": "Гэрлийн хугарал", "description": "Гэрэл нэг орчноос нөгөө орчинд шилжихдээ чиглэлээ өөрчлөх үзэгдэл."},
+        {"en": "Sound wave", "mn": "Дууны долгион", "description": "Энерги дамжуулдаг, механик уртааш долгион."},
+        {"en": "Frequency", "mn": "Давтамж", "description": "Нэг секундэд үүсэх бүтэн долгионы тоо."}
     ]
 
 # Нэвтрэх төлөв
@@ -27,8 +32,8 @@ if 'logged_in' not in st.session_state:
 
 # ---- НЭВТРЭХ ХЭСЭГ ----
 if not st.session_state.logged_in:
-    st.title("📚 Физикийн ухаалаг систем")
-    st.subheader("🔐Системд нэвтрэх")
+    st.title("⚡ Физикийн нэр томьёоны ухаалаг систем")
+    st.subheader("Системд нэвтрэх")
     
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -69,17 +74,23 @@ else:
         with tab1:
             st.subheader("Физикийн шинэ нэр томьёо нэмэх")
             en_word = st.text_input("Термин / Англи үг").strip()
-            mn_word = st.text_input("Монгол тайлбар").strip()
+            mn_word = st.text_input("Монгол утга").strip()
+            desc_text = st.text_input("Товч тайлбар").strip()
+            
             if st.button("Үг нэмэх"):
                 if en_word and mn_word:
-                    st.session_state.vocab.append({"en": en_word, "mn": mn_word, "added_by": user['name']})
+                    st.session_state.vocab.append({
+                        "en": en_word, 
+                        "mn": mn_word, 
+                        "description": desc_text if desc_text else "-"
+                    })
                     st.success(f"'{en_word}' - '{mn_word}' үг амжилттай нэмэгдлээ!")
                 else:
-                    st.warning("Хоёр талын талбарыг хоёуланг нь бөглөнө үү.")
+                    st.warning("Англи болон Монгол утгыг заавал бөглөнө үү.")
                     
         with tab2:
             st.subheader("Файлаар (CSV эсвэл Excel) олон үг зэрэг оруулах")
-            st.info("Файл чинь 'en' (Англи үг) болон 'mn' (Монгол утга) гэсэн баганатай байх ёстой.")
+            st.info("Файл чинь 'en' (Англи үг), 'mn' (Монгол утга), 'description' (Тайлбар) гэсэн багануудтай байх ёстой.")
             uploaded_file = st.file_uploader("Файлаа сонгох / чирж оруулах", type=['csv', 'xlsx'])
             
             if uploaded_file is not None:
@@ -96,10 +107,11 @@ else:
                         count = 0
                         for _, row in df.iterrows():
                             if 'en' in df.columns and 'mn' in df.columns:
+                                desc = str(row['description']) if 'description' in df.columns and pd.notna(row['description']) else "-"
                                 st.session_state.vocab.append({
                                     "en": str(row['en']),
                                     "mn": str(row['mn']),
-                                    "added_by": user['name']
+                                    "description": desc
                                 })
                                 count += 1
                         st.success(f"Нийт {count} нэр томьёо амжилттай нэмэгдлээ!")
@@ -126,5 +138,5 @@ else:
 
     # Нийт үгсийн жагсаалт харуулах
     st.divider()
-    st.subheader("📖 Одоо байгаа физикийн нэр томьёонууд")
+    st.subheader("📖 Физикийн нэр томьёоны сан (Англи - Монгол - Тайлбар)")
     st.table(pd.DataFrame(st.session_state.vocab))
