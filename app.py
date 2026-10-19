@@ -12,7 +12,7 @@ if 'users' not in st.session_state:
         'suragch2': {'password': 'pass2', 'role': 'Сурагч', 'name': 'Сурагч 2'}
     }
 
-# Суурь физик үгсийн сан (Англи, Монгол, Тайлбар)
+# БҮХ ХҮНД ҮЙЛЧЛЭХ НЭГДСЭН ҮГСИЙН САН (Global vocab)
 if 'vocab' not in st.session_state:
     st.session_state.vocab = [
         {"en": "Reflection", "mn": "Гэрлийн ойлт", "description": "Гэрлийн цацраг гадаргуугаас буцаж ойх үзэгдэл."},
@@ -69,7 +69,7 @@ else:
     if user['role'] == 'Багш':
         st.header("👨‍🏫 Багшийн удирдлагын самбар")
         
-        tab1, tab2, tab3 = st.tabs(["➕ Үг нэмэх", "📁 Файлаар үг оруулах", "👥 Хэрэглэгч удирдах"])
+        tab1, tab2, tab3 = st.tabs(["➕ Нэг нэгээр үг нэмэх", "📁 Файлаар (CSV/Excel) олон үг оруулах", "👥 Хэрэглэгч удирдах"])
         
         with tab1:
             st.subheader("Физикийн шинэ нэр томьёо нэмэх")
@@ -84,7 +84,7 @@ else:
                         "mn": mn_word, 
                         "description": desc_text if desc_text else "-"
                     })
-                    st.success(f"'{en_word}' - '{mn_word}' үг амжилттай нэмэгдлээ!")
+                    st.success(f"'{en_word}' - '{mn_word}' үг амжилттай нэмэгдлээ! (Бүх хэрэглэгчдэд харагдана)")
                 else:
                     st.warning("Англи болон Монгол утгыг заавал бөглөнө үү.")
                     
@@ -114,7 +114,7 @@ else:
                                     "description": desc
                                 })
                                 count += 1
-                        st.success(f"Нийт {count} нэр томьёо амжилттай нэмэгдлээ!")
+                        st.success(f"Нийт {count} нэр томьёо амжилттай нэмэгдэж, бүх сурагчдад харагдах боллоо!")
                 except Exception as e:
                     st.error(f"Файл уншихад алдаа гарлаа: {e}")
 
@@ -135,8 +135,9 @@ else:
     # --- СУРАГЧИЙН ЦЭС ---
     else:
         st.header("🎓 Сурагчийн суралцах хэсэг")
+        st.info("Багшийн оруулсан физикийн нэр томьёонуудтай танилцаж, суралцах боломжтой.")
 
-    # Нийт үгсийн жагсаалт харуулах
+    # Нийт үгсийн жагсаалт харуулах (Багш болон сурагч хоёуланд нь адилхан харагдана)
     st.divider()
-    st.subheader("📖 Физикийн нэр томьёоны сан (Англи - Монгол - Тайлбар)")
+    st.subheader(f"📖 Физикийн нэр томьёоны сан (Нийт үг: {len(st.session_state.vocab)})")
     st.table(pd.DataFrame(st.session_state.vocab))
