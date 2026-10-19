@@ -7,7 +7,6 @@ import random
 # Хуудасны тохиргоо
 st.set_page_config(page_title="Физикийн ухаалаг систем", page_icon="⚡", layout="wide")
 
-# Файлд хадгалах, унших туслах функцууд (Дата устахаас хамгаална)
 VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
 
@@ -43,13 +42,13 @@ def save_users(users_dict):
     with open(USER_FILE, "w", encoding="utf-8") as f:
         json.dump(users_dict, f, ensure_ascii=False, indent=4)
 
-# Session state-д өгөгдлөө байрлуулах
 if 'vocab' not in st.session_state:
     st.session_state.vocab = load_data()
 
 if 'users' not in st.session_state:
     st.session_state.users = load_users()
 
+# Нэвтрэх төлөвийг алдахгүй байх баталгаажуулалт (Query params ашиглах)
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_info = None
@@ -109,13 +108,12 @@ else:
                         "description": desc_text if desc_text else "-"
                     })
                     save_data(st.session_state.vocab)
-                    st.success(f"'{en_word}' - '{mn_word}' үг амжилттай нэмэгдэж, бүх сурагчдад харагдах боллоо!")
+                    st.success(f"'{en_word}' - '{mn_word}' амжилттай нэмэгдлээ!")
                 else:
                     st.warning("Англи болон Монгол утгыг заавал бөглөнө үү.")
                     
         with tab2:
-            st.subheader("Файлаар (CSV эсвэл Excel) олон үг зэрэг оруулах")
-            st.info("Файл чинь 'en' (Англи үг), 'mn' (Монгол утга), 'description' (Тайлбар) гэсэн багануудтай байх ёстой.")
+            st.subheader("Файлаар олон үг оруулах")
             uploaded_file = st.file_uploader("Файлаа сонгох / чирж оруулах", type=['csv', 'xlsx'])
             
             if uploaded_file is not None:
@@ -125,7 +123,6 @@ else:
                     else:
                         df = pd.read_excel(uploaded_file)
                         
-                    st.write("Оруулсан файлын урьдчилан харах хэсэг:")
                     st.dataframe(df.head())
                     
                     if st.button("Эдгээр үгсийг системд хуулах"):
@@ -140,13 +137,13 @@ else:
                                 })
                                 count += 1
                         save_data(st.session_state.vocab)
-                        st.success(f"Нийт {count} нэр томьёо амжилттай нэмэгдэж, дата баазад хадгалагдлаа!")
+                        st.success(f"Нийт {count} нэр томьёо амжилттай нэмэгдлээ!")
                 except Exception as e:
-                    st.error(f"Файл уншихад алдаа гарлаа: {e}")
+                    st.error(f"Алдаа гарлаа: {e}")
 
         with tab3:
-            st.subheader("Шинэ сурагч эсвэл багш нэмэх")
-            new_user = st.text_input("Шинэ хэрэглэгчийн логин нэр").strip().lower()
+            st.subheader("Шинэ хэрэглэгч бүртгэх")
+            new_user = st.text_input("Логин нэр").strip().lower()
             new_pass = st.text_input("Нууц үг").strip()
             new_name = st.text_input("Бүтэн нэр").strip()
             new_role = st.selectbox("Эрх", ["Сурагч", "Багш"])
@@ -155,33 +152,28 @@ else:
                 if new_user and new_pass and new_name:
                     st.session_state.users[new_user] = {'password': new_pass, 'role': new_role, 'name': new_name}
                     save_users(st.session_state.users)
-                    st.success(f"'{new_name}' ({new_role}) амжилттай бүртгэгдлээ!")
+                    st.success(f"'{new_name}' амжилттай бүртгэгдлээ!")
                 else:
-                    st.warning("Мэдээллийг бүрэн бөглөнө үү.")
+                    st.warning("Бүх талбарыг бөглөнө үү.")
 
-        st.divider()
-        st.subheader(f"📖 Нийт нэр томьёоны сан ({len(st.session_state.vocab)} үг)")
-        st.table(pd.DataFrame(st.session_state.vocab))
-
-    # --- СУРАГЧИЙН ЦЭС (Сорилт болон Толь бичиг) ---
+    # --- СУРАГЧИЙН ЦЭС (Тест болон Эрэмбэлэгддэг Толь бичиг) ---
     else:
         st.header("🎓 Сурагчийн суралцах болон сорилтын хэсэг")
         
-        tab_s1, tab_s2 = st.tabs(["📝 Нэр томьёоны сорилт (Тест)", "📖 Толь бичиг үзэх"])
+        tab_s1, tab_s2 = st.tabs(["📝 Нэр томьёоны сорилт (Тест)", "📖 Толь бичиг (Хайх & Эрэмбэлэх)"])
         
         with tab_s1:
             st.subheader("Физикийн мэдлэг сорих тест")
             vocab_list = st.session_state.vocab
             
             if len(vocab_list) < 4:
-                st.warning("Тест үүсгэхэд дор хаяж 4 үг шаардлагатай. Багштай холбогдоно уу.")
+                st.warning("Тест ажиллахад дор хаяж 4 үг шаардлагатай.")
             else:
                 if 'quiz_q' not in st.session_state:
                     st.session_state.quiz_q = None
                 
                 if st.button("Шинэ асуулт авах") or st.session_state.quiz_q is None:
                     correct_item = random.choice(vocab_list)
-                    # Буруу 3 хариулт сонгох
                     wrong_items = random.sample([v for v in vocab_list if v['en'] != correct_item['en']], min(3, len(vocab_list)-1))
                     options = [correct_item['mn']] + [w['mn'] for w in wrong_items]
                     random.shuffle(options)
@@ -194,7 +186,7 @@ else:
                     }
                 
                 q = st.session_state.quiz_q
-                st.markdown(f"### Англи нэр: **{q['en']}**")
+                st.markdown(f"### Англи үг: **{q['en']}**")
                 st.caption(f"Тайлбар: {q['desc']}")
                 
                 ans = st.radio("Энэ үгийн Монгол утгыг сонгоно уу:", q['options'], key="quiz_choice")
@@ -206,5 +198,27 @@ else:
                         st.error(f"❌ Буруу байна. Зөв хариулт нь: **{q['correct']}**")
 
         with tab_s2:
-            st.subheader("📖 Физикийн нэр томьёоны нэгдсэн сан")
-            st.table(pd.DataFrame(st.session_state.vocab))
+            st.subheader("📖 Физикийн нэр томьёоны толь бичиг")
+            
+            # Хайлт болон эрэмбэлэх хэсэг
+            search_query = st.text_input("🔍 Хайх үг (Англи эсвэл Монголоор)").strip().lower()
+            sort_option = st.selectbox("Эрэмбэлэх хэлбэр:", ["Англи үгээр (A-Z)", "Монгол үгээр (А-Я)"])
+            
+            df_vocab = pd.DataFrame(st.session_state.vocab)
+            
+            # Хайлт хийх шүүлтүүр
+            if search_query:
+                df_vocab = df_vocab[
+                    df_vocab['en'].str.lower().str.contains(search_query) | 
+                    df_vocab['mn'].str.lower().str.contains(search_query) |
+                    df_vocab['description'].str.lower().str.contains(search_query)
+                ]
+            
+            # Сортлох / эрэмбэлэх
+            if sort_option == "Англи үгээр (A-Z)":
+                df_vocab = df_vocab.sort_values(by='en', ascending=True)
+            else:
+                df_vocab = df_vocab.sort_values(by='mn', ascending=True)
+                
+            st.write((f"Хуудаглалт: Нийт {len(df_vocab)} үг олдлоо."))
+            st.dataframe(df_vocab, use_container_width=True, hide_index=True)
