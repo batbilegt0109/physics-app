@@ -16,13 +16,7 @@ def load_data():
             return json.load(f)
     return [
         {"en": "Reflection", "mn": "Гэрлийн ойлт", "description": "Гэрлийн цацраг гадаргуугаас буцаж ойх үзэгдэл."},
-        {"en": "Plane Mirror", "mn": "Хавтгай толь", "description": "Тэгшхэн, гөлгөр гадаргуутай, гэрлийг жигд ойлгогч хэрэглэгдэхүүн."},
-        {"en": "Incident Ray", "mn": "Тусах цацраг", "description": "Толь эсвэл гадаргуу руу чиглэн ирж буй гэрлийн цацраг."},
-        {"en": "Reflected Ray", "mn": "Ойсон цацраг", "description": "Гадаргуугаас ойж буцаж буй гэрлийн цацраг."},
-        {"en": "Refraction", "mn": "Гэрлийн хугарал", "description": "Гэрэл нэг орчноос нөгөө орчинд шилжихдээ чиглэлээ өөрчлөх үзэгдэл."},
-        {"en": "Sound wave", "mn": "Дууны долгион", "description": "Энерги дамжуулдаг, механик уртааш долгион."},
-        {"en": "Frequency", "mn": "Давтамж", "description": "Нэг секундэд үүсэх бүтэн долгионы тоо."}
-    ]
+            ]
 
 def save_data(vocab_list):
     with open(VOCAB_FILE, "w", encoding="utf-8") as f:
@@ -117,21 +111,49 @@ else:
                     st.warning("Англи болон Монгол утгыг заавал бөглөнө үү.")
                     
         with tab2:
-            st.subheader("Мөрийн дугаараар үг засах эсвэл устгах")
+            st.subheader("Чек тэмдэглээд устгах эсвэл мөрийн дугаараар засах")
             
-            # Хүснэгт хэлбэрээр индекс дугаартай нь харуулах
+            # DataFrame руу хувиргахдаа устгах чек багана (Select) нэмэх
             df_vocab = pd.DataFrame(st.session_state.vocab)
-            df_vocab.index = df_vocab.index + 1  # 1-ээс эхлүүлэх
-            st.dataframe(df_vocab, use_container_width=True)
+            df_vocab.insert(0, "Устгах", False)
             
-            st.divider()
-            col_edit, col_del = st.columns(2)
+            # Хэрэглэгч хүснэгтээс чеклэх боломжтой болгох
+            edited_df = st.data_editor(
+                df_vocab, 
+                use_container_width=True, 
+                hide_index=False,
+                key="vocab_table_editor"
+            )
             
+            col_del_btn, col_edit = st.columns(2)
+            
+            with col_del_btn:
+                if st.button("🗑️ Чеклэсэн үгсийг устгах"):
+                    # Чекийн True болгосон мөрүүдийг хасаад үлдсэнийг нь авна
+                    survived_vocab = []
+                    deleted_count = 0
+                    for idx, row in edited_df.iterrows():
+                        if not row["Устгах"]:
+                            survived_vocab.append({
+                                "en": row["en"],
+                                "mn": row["mn"],
+                                "description": row["description"]
+                            })
+                        else:
+                            deleted_count += 1
+                    
+                    if deleted_count > 0:
+                        st.session_state.vocab = survived_vocab
+                        save_data(st.session_state.vocab)
+                        st.success(f"Нийт {deleted_count} үг амжилттай устгагдлаа!")
+                        st.rerun()
+                    else:
+                        st.warning("Устгахын тулд ямар нэгэн үг чекэлж (чагталж) сонгоно уу.")
+
             with col_edit:
-                st.markdown("### ✏️ Үг засах")
+                st.markdown("### ✏️ Мөрийн дугаараар засах")
                 edit_idx = st.number_input("Засах үгийн дугаар (Index)", min_value=1, max_value=max(len(st.session_state.vocab), 1), step=1)
                 
-                # Тухайн үгийн одоо байгаа утгыг харуулах
                 curr_item = st.session_state.vocab[edit_idx - 1]
                 new_en = st.text_input("Шинэ Англи үг", value=curr_item['en'])
                 new_mn = st.text_input("Шинэ Монгол утга", value=curr_item['mn'])
@@ -145,17 +167,6 @@ else:
                     }
                     save_data(st.session_state.vocab)
                     st.success(f"{edit_idx}-р дугаартай үг амжилттай шинэчлэгдлээ!")
-                    st.rerun()
-
-            with col_del:
-                st.markdown("### 🗑️ Үг устгах")
-                del_idx = st.number_input("Устгах үгийн дугаар (Index)", min_value=1, max_value=max(len(st.session_state.vocab), 1), step=1, key="del_input")
-                
-                st.warning(f"Та {del_idx}-р дугаартай үгийг устгахдаа итгэлтэй байна уу?")
-                if st.button("Энэ үгийг устгах"):
-                    removed = st.session_state.vocab.pop(del_idx - 1)
-                    save_data(st.session_state.vocab)
-                    st.success(f"'{removed['en']}' үг амжилттай устгагдлаа!")
                     st.rerun()
 
         with tab3:
