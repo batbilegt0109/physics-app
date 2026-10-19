@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Хуудасны тохиргоо
-st.set_page_config(page_title="🔐 Системд нэвтрэх", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="📚 Физикийн ухаалаг систем", page_icon="⚡", layout="wide")
 
 # Суурь хэрэглэгчдийн дата (Нэвтрэх нэр: Нууц үг, Эрх)
 if 'users' not in st.session_state:
@@ -27,8 +27,8 @@ if 'logged_in' not in st.session_state:
 
 # ---- НЭВТРЭХ ХЭСЭГ ----
 if not st.session_state.logged_in:
-    st.title("📚 Физикийн ухаалаг систем")
-    st.subheader("Системд нэвтрэх")
+    st.title("Физикийн ухаалаг систем")
+    st.subheader("🔐Системд нэвтрэх")
     
     col1, col2 = st.columns([1, 2])
     with col1:
