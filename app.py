@@ -46,6 +46,16 @@ if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_info = None
 
+# ---- РЕФРЭШ ХИЙХЭД ГАРАХГҮЙ БАЙХ ХЭСЭГ ----
+params = st.query_params
+if "user" in params and not st.session_state.logged_in:
+    username = params["user"]
+    users = st.session_state.users
+    if username in users:
+        st.session_state.logged_in = True
+        st.session_state.user_info = users[username]
+        st.session_state.user_info['username'] = username
+
 # ---- НЭВТРЭХ ХЭСЭГ ----
 if not st.session_state.logged_in:
     st.title("⚡ Физикийн нэр томьёоны ухаалаг систем")
@@ -63,6 +73,8 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.user_info = users[username_input]
                 st.session_state.user_info['username'] = username_input
+                # Нэвтэрсэн нэрийг URL хаяг руу бичих
+                st.query_params["user"] = username_input
                 st.rerun()
             else:
                 st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
@@ -77,6 +89,9 @@ else:
         if st.button("Гарах (Log out)"):
             st.session_state.logged_in = False
             st.session_state.user_info = None
+            # URL доторх хэрэглэгчийн мэдээллийг устгах
+            if "user" in st.query_params:
+                del st.query_params["user"]
             st.rerun()
 
     st.title("⚡ Физикийн нэр томьёоны ухаалаг систем")
