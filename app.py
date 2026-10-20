@@ -142,8 +142,9 @@ else:
     # --- БАГШИЙН ЦЭС ---
     if user['role'] == 'Багш':
         if menu_choice == "🏫 Ангиуд удирдах":
-            st.subheader("🏫 Анги / Бүлгүүд үүсгэх (Жишээ нь: 6а, 6б, 6в, 7а)")
-            new_c = st.text_input("Шинэ бүлгийн нэр").strip()
+            st.subheader("🏫 Анги / Бүлгүүдийг удирдах, устгах")
+            
+            new_c = st.text_input("Шинэ бүлгийн нэр (Жишээ нь: 6а, 8б)").strip()
             if st.button("Анги нэмэх"):
                 if new_c and new_c not in st.session_state.classes:
                     st.session_state.classes.append(new_c)
@@ -151,7 +152,24 @@ else:
                     save_json(CLASS_FILE, st.session_state.classes)
                     st.success(f"'{new_c}' анги амжилттай нэмэгдлээ!")
                     st.rerun()
-            st.write("Бүртгэлтэй ангиуд:", ", ".join([f"**{c}**" for c in st.session_state.classes]))
+                elif new_c in st.session_state.classes:
+                    st.warning("Энэ анги аль хэдийн байна.")
+            
+            st.divider()
+            st.markdown("### 📋 Бүртгэлтэй ангиуд (Устгах боломжтой)")
+            if not st.session_state.classes:
+                st.info("Бүртгэлтэй анги байхгүй байна.")
+            else:
+                for idx, c_name in enumerate(st.session_state.classes):
+                    c1, c2 = st.columns([4, 1])
+                    with c1:
+                        st.write(f"📌 **{c_name}**")
+                    with c2:
+                        if st.button("🗑️ Устгах", key=f"del_cls_{idx}"):
+                            st.session_state.classes.remove(c_name)
+                            save_json(CLASS_FILE, st.session_state.classes)
+                            st.success(f"'{c_name}' анги устгагдлаа!")
+                            st.rerun()
 
         elif menu_choice == "👥 Сурагчдын жагсаалт":
             st.subheader("👥 Бүртгэлтэй сурагчдын жагсаалт")
@@ -178,13 +196,9 @@ else:
             st.dataframe(pd.DataFrame(st.session_state.vocab), use_container_width=True)
 
         elif menu_choice == "📚 Гэрийн даалгавар өгөх":
-            st.subheader("📚 Ангид даалгавар өгөх (Жишээ нь: Нийт 6-р анги эсвэл 7-р ангид)")
-            st.info("💡 Даалгаврыг ангийн түвшнээр (6-р анги) өгөх ба дүн шинжилгээ дээр 6а, 6б, 6в бүлгүүдээр ялгарч харагдана.")
-            
+            st.subheader("📚 Ангид даалгавар өгөх")
             hw_title = st.text_input("Даалгаврын гарчиг")
             hw_desc = st.text_area("Даалгаврын заавар / бодлогууд")
-            
-            # Ангийн түвшнээр сонгох (6-р анги, 7-р анги г.м)
             grade_target = st.selectbox("Аль ангийн түвшинд өгөх вэ?", ["6-р анги", "7-р анги", "8-р анги", "9-р анги", "10-р анги", "Бүгд"])
             deadline = st.date_input("Дуусах хугацаа")
             
@@ -198,7 +212,7 @@ else:
                         "deadline": str(deadline)
                     })
                     save_json(HOMEWORK_FILE, st.session_state.homeworks)
-                    st.success(f"'{hw_title}' даалгавар {grade_target}-ийн бүх бүлгүүдэд нийтлэгдлээ!")
+                    st.success(f"'{hw_title}' даалгавар амжилттай нийтлэгдлээ!")
 
         elif menu_choice == "📝 Шалгалт удирдах":
             st.subheader("📝 Бүлэг сэдвийн шалгалт үүсгэх")
@@ -263,8 +277,6 @@ else:
                         })
                 
                 df_res = pd.DataFrame(rows)
-                
-                # Анги бүлгээр нь шүүж харах
                 selected_cls = st.selectbox("Анализ хийх бүлгээ сонгоно уу:", ["Бүх бүлэг"] + sorted(list(df_res["Бүлэг/Анги"].unique())))
                 
                 if selected_cls != "Бүх бүлэг":
@@ -275,7 +287,6 @@ else:
                 st.write(f"### 📋 {selected_cls} - Дүнгийн нэгтгэл")
                 st.dataframe(filtered_df, use_container_width=True)
                 
-                # Excel рүү татах
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df_res.to_excel(writer, index=False, sheet_name='Нийт_Дүн')
@@ -283,7 +294,6 @@ else:
                         group_df.to_excel(writer, index=False, sheet_name=f"Анги_{cls_name}")
                         
                 processed_data = output.getvalue()
-                
                 st.download_button(
                     label="📥 Бүх бүлгийн тайланг Excel (.xlsx) файлаар татах",
                     data=processed_data,
@@ -291,7 +301,7 @@ else:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-    # --- СУРАГЧИЙН ЦЭС ---
+    # --- СУРАГЧИЙН ХЭСЭГ ---
     else:
         if menu_choice == "📝 Нэр томьёоны сорилт (10 тест)":
             st.subheader("📝 Нэр томьёоны сорилт (Яг 10 тест, Тайлбар нуугдсан)")
@@ -331,9 +341,7 @@ else:
         elif menu_choice == "📚 Миний гэрийн даалгавар":
             st.subheader(f"📚 {user.get('class', '')} бүлгийн гэрийн даалгаврууд")
             homeworks = st.session_state.get('homeworks', [])
-            my_class = user.get('class', '') # Жишээ нь: 6а
-            
-            # Сурагчийн ангийн түвшинг тодорхойлох (Жишээ нь 6а -> 6-р анги)
+            my_class = user.get('class', '')
             my_grade = my_class[0] + "-р анги" if len(my_class) > 0 and my_class[0].isdigit() else "Бүгд"
             
             filtered_hw = [
