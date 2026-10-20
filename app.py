@@ -509,13 +509,13 @@ else:
                 categories = list(set([v.get('category', 'Бүгд') for v in vocab_list]))
                 chosen_cat = st.selectbox("Бүлэг сэдэв сонгох:", ["Бүх бүлэг"] + categories)
                 
-                filtered_vocab = vocab_list if chosen_cat == "Бүх бүлэг" else [v for v in vocab_list if v.get('category'] == chosen_cat]
+                filtered_vocab = vocab_list if chosen_cat == "Бүх бүлэг" else [v for v in vocab_list if v.get('category') == chosen_cat]
                 
                 sub_cats = list(set([v.get('sub_category', 'Бүгд') for v in filtered_vocab]))
                 chosen_sub = st.selectbox("Дэд сэдэв сонгох:", ["Бүх дэд сэдэв"] + sub_cats)
                 
                 if chosen_sub != "Бүх дэд сэдэв":
-                    filtered_vocab = [v for v in filtered_vocab if v.get('sub_category'] == chosen_sub]
+                    filtered_vocab = [v for v in filtered_vocab if v.get('sub_category') == chosen_sub]
                     target_q_count = 10  # Дэд сэдэв бол яг 10 асуулт
                     mn_en_count = 3      # 3 Монгол -> Англи
                 else:
