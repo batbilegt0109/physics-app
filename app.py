@@ -392,7 +392,7 @@ if not st.session_state.logged_in:
                         with st.container(border=True):
                             st.markdown(f"### 📌 {hw['title']}")
                             st.write(hw['description'])
-                            st.caption(ل Дуусах хугацаа: {hw['deadline']})
+                            st.caption(f"Дуусах хугацаа: {hw['deadline']}")
                             
                             hw_ans = st.text_area(f"Таны хариулт / Бодолт ({hw['title']})", key=f"ans_{hw['id']}")
                             if st.button("📤 Даалгавар илгээх", key=f"sub_{hw['id']}"):
