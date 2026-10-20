@@ -5,7 +5,7 @@ import os
 import random
 
 # Хуудасны тохиргоо
-st.set_page_config(page_title="GTIS Physics Физик", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="GTIS Physics", page_icon="⚡", layout="wide")
 
 VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
@@ -27,7 +27,7 @@ def load_users():
         with open(USER_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {
-        'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'Багш'},
+        'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'batbilegt.ya'},
         'suragch1': {'password': 'pass1', 'role': 'Сурагч', 'name': 'Сурагч 1'},
         'suragch2': {'password': 'pass2', 'role': 'Сурагч', 'name': 'Сурагч 2'}
     }
@@ -85,7 +85,7 @@ else:
     
     # Зүүн талын цэс (Sidebar)
     with st.sidebar:
-        st.success(f"Тавтай морил, {user['name']} ({user['role']})")
+        st.success(f"{user['name']} ({user['role']})")
         if st.button("Гарах (Log out)"):
             st.session_state.logged_in = False
             st.session_state.user_info = None
