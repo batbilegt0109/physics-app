@@ -9,7 +9,7 @@ st.set_page_config(page_title="GTIS Physics", page_icon="⚡", layout="wide")
 
 VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
-RESULT_FILE = "result_data.json"  # <-- Шинээр үр дүн хадгалах файл нэмэх
+RESULT_FILE = "result_data.json"
 
 def load_data():
     if os.path.exists(VOCAB_FILE):
@@ -23,7 +23,6 @@ def save_data(vocab_list):
     with open(VOCAB_FILE, "w", encoding="utf-8") as f:
         json.dump(vocab_list, f, ensure_ascii=False, indent=4)
 
-# --- Шинээр үр дүн болон хэрэглэгчийн алдааг хадгалах функцүүд ---
 def load_results():
     if os.path.exists(RESULT_FILE):
         with open(RESULT_FILE, "r", encoding="utf-8") as f:
@@ -33,7 +32,6 @@ def load_results():
 def save_results(results_dict):
     with open(RESULT_FILE, "w", encoding="utf-8") as f:
         json.dump(results_dict, f, ensure_ascii=False, indent=4)
-# -------------------------------------------------------------
 
 def load_users():
     if os.path.exists(USER_FILE):
@@ -86,7 +84,6 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.user_info = users[username_input]
                 st.session_state.user_info['username'] = username_input
-                # Нэвтэрсэн нэрийг URL хаяг руу бичих
                 st.query_params["user"] = username_input
                 st.rerun()
             else:
@@ -96,13 +93,11 @@ if not st.session_state.logged_in:
 else:
     user = st.session_state.user_info
     
-    # Зүүн талын цэс (Sidebar)
     with st.sidebar:
         st.success(f"{user['name']} ({user['role']})")
         if st.button("Гарах (Log out)"):
             st.session_state.logged_in = False
             st.session_state.user_info = None
-            # URL доторх хэрэглэгчийн мэдээллийг устгах
             if "user" in st.query_params:
                 del st.query_params["user"]
             st.rerun()
@@ -113,20 +108,17 @@ else:
     if user['role'] == 'Багш':
         st.header("👨‍🏫 Багшийн удирдлагын самбар")
         
-        # Шинэ Tab нэмэхэд tab5 болгон өргөжүүлнэ
         tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "➕ Нэг нэгээр үг нэмэх", 
             "✏️ Үг засах / 🗑️ Устгах", 
             "📁 Файлаар олон үг оруулах", 
             "👥 Хэрэглэгч удирдах",
-            "📊 Дүн шинжилгээ (Analytics)" # <-- Шинэ Tab
+            "📊 Дүн шинжилгээ (Analytics)"
         ])
         
-       with tab1:
+        with tab1:
             st.subheader("Физикийн шинэ нэр томьёо нэмэх")
-            # --- Шинээр сэдэв сонгох хэсэг нэмэв ---
             category = st.selectbox("Бүлэг сэдэв", ["Механик", "Цахилгаан соронзон", "Оптик", "Термодинамик", "Бусад"])
-            # ---------------------------------------
             en_word = st.text_input("Термин / Англи үг").strip()
             mn_word = st.text_input("Монгол утга").strip()
             desc_text = st.text_input("Товч тайлбар").strip()
@@ -134,7 +126,7 @@ else:
             if st.button("Үг нэмэх"):
                 if en_word and mn_word:
                     st.session_state.vocab.append({
-                        "category": category, # <-- Сэдвийг хамт хадгалах
+                        "category": category, 
                         "en": en_word, 
                         "mn": mn_word, 
                         "description": desc_text if desc_text else "-"
@@ -146,12 +138,9 @@ else:
                     
         with tab2:
             st.subheader("Чек тэмдэглээд устгах эсвэл мөрийн дугаараар засах")
-            
-            # DataFrame руу хувиргахдаа устгах чек багана (Select) нэмэх
             df_vocab = pd.DataFrame(st.session_state.vocab)
             df_vocab.insert(0, "Устгах", False)
             
-            # Хэрэглэгч хүснэгтээс чеклэх боломжтой болгох
             edited_df = st.data_editor(
                 df_vocab, 
                 use_container_width=True, 
@@ -163,12 +152,12 @@ else:
             
             with col_del_btn:
                 if st.button("🗑️ Чеклэсэн үгсийг устгах"):
-                    # Чекийн True болгосон мөрүүдийг хасаад үлдсэнийг нь авна
                     survived_vocab = []
                     deleted_count = 0
                     for idx, row in edited_df.iterrows():
                         if not row["Устгах"]:
                             survived_vocab.append({
+                                "category": row.get("category", "Бусад"),
                                 "en": row["en"],
                                 "mn": row["mn"],
                                 "description": row["description"]
@@ -189,12 +178,18 @@ else:
                 edit_idx = st.number_input("Засах үгийн дугаар (Index)", min_value=1, max_value=max(len(st.session_state.vocab), 1), step=1)
                 
                 curr_item = st.session_state.vocab[edit_idx - 1]
+                curr_cat = curr_item.get("category", "Бусад")
+                cat_list = ["Механик", "Цахилгаан соронзон", "Оптик", "Термодинамик", "Бусад"]
+                cat_index = cat_list.index(curr_cat) if curr_cat in cat_list else 0
+                
+                new_cat = st.selectbox("Шинэ бүлэг сэдэв", cat_list, index=cat_index)
                 new_en = st.text_input("Шинэ Англи үг", value=curr_item['en'])
                 new_mn = st.text_input("Шинэ Монгол утга", value=curr_item['mn'])
                 new_desc = st.text_area("Шинэ тайлбар", value=curr_item['description'])
                 
                 if st.button("Өөрчлөлтийг хадгалах"):
                     st.session_state.vocab[edit_idx - 1] = {
+                        "category": new_cat,
                         "en": new_en.strip(),
                         "mn": new_mn.strip(),
                         "description": new_desc.strip()
@@ -220,8 +215,10 @@ else:
                         count = 0
                         for _, row in df.iterrows():
                             if 'en' in df.columns and 'mn' in df.columns:
+                                cat = str(row['category']) if 'category' in df.columns and pd.notna(row['category']) else "Бусад"
                                 desc = str(row['description']) if 'description' in df.columns and pd.notna(row['description']) else "-"
                                 st.session_state.vocab.append({
+                                    "category": cat,
                                     "en": str(row['en']),
                                     "mn": str(row['mn']),
                                     "description": desc
@@ -247,7 +244,7 @@ else:
                 else:
                     st.warning("Бүх талбарыг бөглөнө үү.")
 
-         with tab5:
+        with tab5:
             st.subheader("📈 Сурагчдын сорилтын нэгдсэн дүн")
             results = load_results()
             if not results:
@@ -297,7 +294,6 @@ else:
                 ans = st.radio("Энэ үгийн Монгол утгыг сонгоно уу:", q['options'], key="quiz_choice")
                 
                 if st.button("Хариу шалгах"):
-                    # Session state дээр үр дүнг түр хадгалах санах ой үүсгэх
                     if 'results_db' not in st.session_state:
                         st.session_state.results_db = load_results()
                     
@@ -312,7 +308,6 @@ else:
                         st.error(f"❌ Буруу байна. Зөв хариулт нь: **{q['correct']}**")
                         score = 0
                     
-                    # Үр дүнг файлд болон session рүү бүртгэх
                     st.session_state.results_db[user_key].append({
                         "word": q['en'],
                         "score": score
