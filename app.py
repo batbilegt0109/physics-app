@@ -37,7 +37,6 @@ if 'vocab' not in st.session_state:
 
 if 'users' not in st.session_state:
     users_data = load_json(USER_FILE, {})
-    # batbilegt.ya Админ аккаунтыг заавал байхаар бататгаж байна
     users_data['batbilegt.ya'] = {
         'password': '123',
         'role': 'Админ',
@@ -56,9 +55,17 @@ if 'exams' not in st.session_state:
 if 'homeworks' not in st.session_state:
     st.session_state.homeworks = load_json(HOMEWORK_FILE, [])
 
+# --- REFRESH ХИЙХЭД НЭВТРЭСЭН ТӨЛӨВХӨТ ТАХИЛЗАХ (Query Params) ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_info = None
+
+    saved_user = st.query_params.get("logged_user", None)
+    if saved_user and saved_user in st.session_state.users:
+        st.session_state.logged_in = True
+        u_data = st.session_state.users[saved_user]
+        u_data['username'] = saved_user
+        st.session_state.user_info = u_data
 
 # ---- НЭВТРЭХ ХЭСЭГ ----
 if not st.session_state.logged_in:
@@ -70,7 +77,6 @@ if not st.session_state.logged_in:
     with tab_login:
         col1, _ = st.columns([1, 2])
         with col1:
-            
             username_input = st.text_input("Нэвтрэх нэр (Username)").strip()
             password_input = st.text_input("Нууц үг (Password)", type="password").strip()
             login_btn = st.button("Нэвтрэх", use_container_width=True)
@@ -79,8 +85,11 @@ if not st.session_state.logged_in:
                 users = st.session_state.users
                 if username_input in users and users[username_input]['password'] == password_input:
                     st.session_state.logged_in = True
-                    st.session_state.user_info = users[username_input]
-                    st.session_state.user_info['username'] = username_input
+                    u_data = users[username_input]
+                    u_data['username'] = username_input
+                    st.session_state.user_info = u_data
+                    
+                    st.query_params["logged_user"] = username_input
                     st.rerun()
                 else:
                     st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
@@ -118,6 +127,19 @@ else:
         st.title("⚡ Физикийн систем")
         st.success(f"👤 **{user['name']}** ({user['role']})")
         
+        # --- ТҮРГЭН ШАЛГАХ РЕЖИМ (Зөвхөн админд зориулж нэг компьютер дээр эрх сольж шалгах боломж) ---
+        if user.get('username') == 'batbilegt.ya':
+            st.markdown("---")
+            st.markdown("🛠️ **Админ тест хийх хэрэгсэл:**")
+            all_usernames = list(st.session_state.users.keys())
+            selected_test_user = st.selectbox("Өөр хэрэглэгч рүү шилжих:", all_usernames, key="role_switcher")
+            if st.button("🔄 Энэ эрх рүү шилжиж шалгах"):
+                st.session_state.user_info = st.session_state.users[selected_test_user]
+                st.session_state.user_info['username'] = selected_test_user
+                st.query_params["logged_user"] = selected_test_user
+                st.rerun()
+            st.markdown("---")
+
         if user['role'] in ['Админ', 'Багш']:
             menu_options = [
                 "🏫 Ангиуд удирдах",
@@ -146,6 +168,8 @@ else:
         if st.button("🚪 Гарах (Log out)", use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.user_info = None
+            if "logged_user" in st.query_params:
+                del st.query_params["logged_user"]
             st.rerun()
 
     # --- БАГШИЙН / АДМИНЫ ЦЭС ---
@@ -231,7 +255,6 @@ else:
             tab_v1, tab_v2 = st.tabs(["✏️ Үгс харах, Засах & Устгах", "📥 Файлаар & Гараар оруулах"])
             
             with tab_v1:
-                # Vocab хоосон үед Data Editor алдахаас сэргийлж хоосон 5 баганатай DataFrame үүсгэх
                 if not st.session_state.vocab:
                     df_vocab = pd.DataFrame(columns=['category', 'sub_category', 'en', 'mn', 'description'])
                 else:
@@ -254,7 +277,6 @@ else:
                     if up_file:
                         try:
                             df_import = pd.read_csv(up_file) if up_file.name.endswith('.csv') else pd.read_excel(up_file)
-                            # Баганын нэрсийг жижиг болгож цэвэрлэх
                             df_import.columns = [str(c).strip().lower() for c in df_import.columns]
                             req_cols = ['category', 'sub_category', 'en', 'mn', 'description']
                             if not all(c in df_import.columns for c in req_cols):
@@ -405,7 +427,7 @@ else:
                         opts = [item['mn']] + wrong
                         random.shuffle(opts)
                         q_list.append({
-                            "question": f"'{item['en']}' терминий Монгол утгыг сонгоно уу:",
+                            "question": f"'{item['en']}' Монгол утгыг сонгоно уу:",
                             "options": opts,
                             "correct": item['mn']
                         })
@@ -500,7 +522,7 @@ else:
                             opts = [item['mn']] + wrongs
                             random.shuffle(opts)
                             quiz_items.append({
-                                "question": f"А'{item['en']}' -> Монгол утгыг сонгоно уу:",
+                                "question": f"'{item['en']}' -> Монгол утгыг сонгоно уу:",
                                 "options": opts, "correct": item['mn']
                             })
                         
