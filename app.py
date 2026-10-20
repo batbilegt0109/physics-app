@@ -70,7 +70,7 @@ if not st.session_state.logged_in:
     with tab_login:
         col1, _ = st.columns([1, 2])
         with col1:
-            st.info("💡 **Админ нэвтрэх:** Username: `batbilegt.ya` | Нууц үг: `123`")
+            
             username_input = st.text_input("Нэвтрэх нэр (Username)").strip()
             password_input = st.text_input("Нууц үг (Password)", type="password").strip()
             login_btn = st.button("Нэвтрэх", use_container_width=True)
