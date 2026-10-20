@@ -32,17 +32,17 @@ def save_json(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Session state инициализаци
+# Session state инициализаци (Ямар ч урьдчилан оруулсан хуурамч өгөгдөл байхгүй, цэвэр суурь)
 if 'vocab' not in st.session_state:
     st.session_state.vocab = load_json(VOCAB_FILE, [])
 
 if 'users' not in st.session_state:
     st.session_state.users = load_json(USER_FILE, {
-        'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'Үндсэн багш', 'grade': 'Бүгд', 'group': 'Бүгд'}
+        'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'Үндсэн багш', 'class': 'Бүгд'}
     })
 
 if 'classes' not in st.session_state:
-    st.session_state.classes = load_json(CLASS_FILE, ["6а", "6б", "6в", "7а", "7б", "10а"])
+    st.session_state.classes = load_json(CLASS_FILE, [])
 
 if 'exams' not in st.session_state:
     st.session_state.exams = load_json(EXAM_FILE, [])
@@ -80,26 +80,29 @@ if not st.session_state.logged_in:
                     
     with tab_register:
         st.markdown("### Сурагч өөрөө бүртгүүлэх")
-        reg_user = st.text_input("Шинэ Username").strip().lower()
-        reg_pass = st.text_input("Нууц үг", type="password").strip()
-        reg_name = st.text_input("Овог, нэр").strip()
-        reg_class = st.selectbox("Өөрийн анги / бүлгээ сонгоно уу:", st.session_state.classes)
-        
-        if st.button("Бүртгүүлэх"):
-            if reg_user and reg_pass and reg_name:
-                if reg_user in st.session_state.users:
-                    st.error("Энэ username аль хэдийн бүртгэгдсэн байна.")
+        if not st.session_state.classes:
+            st.warning("Багш одоогоор анги үүсгээгүй байна. Багштайгаа холбогдоно уу.")
+        else:
+            reg_user = st.text_input("Шинэ Username").strip().lower()
+            reg_pass = st.text_input("Нууц үг", type="password").strip()
+            reg_name = st.text_input("Овог, нэр").strip()
+            reg_class = st.selectbox("Өөрийн анги / бүлгээ сонгоно уу:", st.session_state.classes)
+            
+            if st.button("Бүртгүүлэх"):
+                if reg_user and reg_pass and reg_name:
+                    if reg_user in st.session_state.users:
+                        st.error("Энэ username аль хэдийн бүртгэгдсэн байна.")
+                    else:
+                        st.session_state.users[reg_user] = {
+                            'password': reg_pass,
+                            'role': 'Сурагч',
+                            'name': reg_name,
+                            'class': reg_class
+                        }
+                        save_json(USER_FILE, st.session_state.users)
+                        st.success("Амжилттай бүртгэгдлээ! Одоо 'Нэвтрэх' хэсгээр нэвтэрнэ үү.")
                 else:
-                    st.session_state.users[reg_user] = {
-                        'password': reg_pass,
-                        'role': 'Сурагч',
-                        'name': reg_name,
-                        'class': reg_class
-                    }
-                    save_json(USER_FILE, st.session_state.users)
-                    st.success("Амжилттай бүртгэгдлээ! Одоо 'Нэвтрэх' хэсгээр нэвтэрнэ үү.")
-            else:
-                st.warning("Бүх талбарыг бүрэн бөглөнө үү.")
+                    st.warning("Бүх талбарыг бүрэн бөглөнө үү.")
 
 # ---- НЭВТЭРСНИЙ ДАРААХ ХЭСЭГ ----
 else:
@@ -144,7 +147,7 @@ else:
         if menu_choice == "🏫 Ангиуд удирдах":
             st.subheader("🏫 Анги / Бүлгүүдийг удирдах, устгах")
             
-            new_c = st.text_input("Шинэ бүлгийн нэр (Жишээ нь: 6а, 8б)").strip()
+            new_c = st.text_input("Шинэ бүлгийн нэр (Жишээ нь: 6а, 6б, 7а)").strip()
             if st.button("Анги нэмэх"):
                 if new_c and new_c not in st.session_state.classes:
                     st.session_state.classes.append(new_c)
@@ -153,12 +156,12 @@ else:
                     st.success(f"'{new_c}' анги амжилттай нэмэгдлээ!")
                     st.rerun()
                 elif new_c in st.session_state.classes:
-                    st.warning("Энэ анги аль хэдийн байна.")
+                    st.warning("Энэ анги аль хэдийн бүртгэгдсэн байна.")
             
             st.divider()
             st.markdown("### 📋 Бүртгэлтэй ангиуд (Устгах боломжтой)")
             if not st.session_state.classes:
-                st.info("Бүртгэлтэй анги байхгүй байна.")
+                st.info("Одоогоор бүртгэлтэй анги байхгүй байна. Дээрээс шинээр үүсгэнэ үү.")
             else:
                 for idx, c_name in enumerate(st.session_state.classes):
                     c1, c2 = st.columns([4, 1])
@@ -193,26 +196,30 @@ else:
                     save_json(VOCAB_FILE, st.session_state.vocab)
                     st.success("Үг нэмэгдлээ!")
                     st.rerun()
-            st.dataframe(pd.DataFrame(st.session_state.vocab), use_container_width=True)
+            if st.session_state.vocab:
+                st.dataframe(pd.DataFrame(st.session_state.vocab), use_container_width=True)
 
         elif menu_choice == "📚 Гэрийн даалгавар өгөх":
             st.subheader("📚 Ангид даалгавар өгөх")
-            hw_title = st.text_input("Даалгаврын гарчиг")
-            hw_desc = st.text_area("Даалгаврын заавар / бодлогууд")
-            grade_target = st.selectbox("Аль ангийн түвшинд өгөх вэ?", ["6-р анги", "7-р анги", "8-р анги", "9-р анги", "10-р анги", "Бүгд"])
-            deadline = st.date_input("Дуусах хугацаа")
-            
-            if st.button("Даалгавар нийтлэх"):
-                if hw_title:
-                    st.session_state.homeworks.append({
-                        "id": str(random.randint(1000, 9999)),
-                        "title": hw_title,
-                        "description": hw_desc,
-                        "target_grade": grade_target,
-                        "deadline": str(deadline)
-                    })
-                    save_json(HOMEWORK_FILE, st.session_state.homeworks)
-                    st.success(f"'{hw_title}' даалгавар амжилттай нийтлэгдлээ!")
+            if not st.session_state.classes:
+                st.warning("Эхлээд 'Ангиуд удирдах' хэсгээс анги үүсгэнэ үү.")
+            else:
+                hw_title = st.text_input("Даалгаврын гарчиг")
+                hw_desc = st.text_area("Даалгаврын заавар / бодлогууд")
+                target_cls = st.selectbox("Аль анги / бүлэгт зориулсан бэ?", ["Бүгд"] + st.session_state.classes)
+                deadline = st.date_input("Дуусах хугацаа")
+                
+                if st.button("Даалгавар нийтлэх"):
+                    if hw_title:
+                        st.session_state.homeworks.append({
+                            "id": str(random.randint(1000, 9999)),
+                            "title": hw_title,
+                            "description": hw_desc,
+                            "target_class": target_cls,
+                            "deadline": str(deadline)
+                        })
+                        save_json(HOMEWORK_FILE, st.session_state.homeworks)
+                        st.success(f"'{hw_title}' даалгавар амжилттай нийтлэгдлээ!")
 
         elif menu_choice == "📝 Шалгалт удирдах":
             st.subheader("📝 Бүлэг сэдвийн шалгалт үүсгэх")
@@ -239,13 +246,16 @@ else:
 
         elif menu_choice == "🤖 AI тест генератор":
             st.subheader("🤖 AI ашиглан тест үүсгэх")
-            count = st.slider("Асуултын тоо", 3, 10, 5)
-            if st.button("AI Тест генератордох"):
-                if len(st.session_state.vocab) >= 4:
+            if len(st.session_state.vocab) < 4:
+                st.warning("AI тест үүсгэхэд үгсийн санд дор хаяж 4 үг байх шаардлагатай.")
+            else:
+                count = st.slider("Асуултын тоо", 3, 10, min(5, len(st.session_state.vocab)))
+                if st.button("AI Тест генератордох"):
                     selected = random.sample(st.session_state.vocab, min(count, len(st.session_state.vocab)))
                     q_list = []
                     for item in selected:
-                        wrong = random.sample([v['mn'] for v in st.session_state.vocab if v['en'] != item['en']], 3)
+                        wrong_pool = [v['mn'] for v in st.session_state.vocab if v['en'] != item['en']]
+                        wrong = random.sample(wrong_pool, min(3, len(wrong_pool)))
                         opts = [item['mn']] + wrong
                         random.shuffle(opts)
                         q_list.append({"question": f"'{item['en']}' гэсэн үгийн утга?", "options": opts, "correct": item['mn']})
@@ -319,7 +329,8 @@ else:
                 
                 if idx < len(q_list):
                     item = q_list[idx]
-                    wrong = random.sample([v['mn'] for v in vocab_list if v['en'] != item['en']], min(3, len(vocab_list)-1))
+                    wrong_pool = [v['mn'] for v in vocab_list if v['en'] != item['en']]
+                    wrong = random.sample(wrong_pool, min(3, len(wrong_pool)))
                     opts = [item['mn']] + wrong
                     random.shuffle(opts)
                     
@@ -342,15 +353,15 @@ else:
             st.subheader(f"📚 {user.get('class', '')} бүлгийн гэрийн даалгаврууд")
             homeworks = st.session_state.get('homeworks', [])
             my_class = user.get('class', '')
-            my_grade = my_class[0] + "-р анги" if len(my_class) > 0 and my_class[0].isdigit() else "Бүгд"
             
+            # Тухайн ангид эсвэл "Бүгд"-д зориулсан даалгавруудыг шүүж харуулах
             filtered_hw = [
                 hw for hw in homeworks 
-                if hw.get('target_grade') == "Бүгд" or hw.get('target_grade') == my_grade or hw.get('target_grade') == my_class
+                if hw.get('target_class') == "Бүгд" or hw.get('target_class') == my_class
             ]
             
             if not filtered_hw:
-                st.info("Таны ангид одоогоор даалгавар байхгүй байна.")
+                st.info("Таны ангид одоогоор идэвхтэй даалгавар байхгүй байна.")
             else:
                 for hw in filtered_hw:
                     with st.container(border=True):
