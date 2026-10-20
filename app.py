@@ -509,53 +509,65 @@ else:
                 categories = list(set([v.get('category', 'Бүгд') for v in vocab_list]))
                 chosen_cat = st.selectbox("Бүлэг сэдэв сонгох:", ["Бүх бүлэг"] + categories)
                 
-                filtered_vocab = vocab_list if chosen_cat == "Бүх бүлэг" else [v for v in vocab_list if v.get('category') == chosen_cat]
+                filtered_vocab = vocab_list if chosen_cat == "Бүх бүлэг" else [v for v in vocab_list if v.get('category'] == chosen_cat]
                 
                 sub_cats = list(set([v.get('sub_category', 'Бүгд') for v in filtered_vocab]))
                 chosen_sub = st.selectbox("Дэд сэдэв сонгох:", ["Бүх дэд сэдэв"] + sub_cats)
                 
                 if chosen_sub != "Бүх дэд сэдэв":
-                    filtered_vocab = [v for v in filtered_vocab if v.get('sub_category') == chosen_sub]
+                    filtered_vocab = [v for v in filtered_vocab if v.get('sub_category'] == chosen_sub]
+                    target_q_count = 10  # Дэд сэдэв бол яг 10 асуулт
+                    mn_en_count = 3      # 3 Монгол -> Англи
+                else:
+                    target_q_count = 20  # Бүлэг сэдэв бол 20 асуулт (2 дахин их)
+                    mn_en_count = 6      # 6 Монгол -> Англи
                 
-                if len(filtered_vocab) < 4:
+                # Хэрэв саэнд байгаа үгний тоо хүрэхгүй бол боломжит хамгийн ихээр авна
+                actual_q_count = min(target_q_count, len(filtered_vocab))
+                
+                if actual_q_count < 4:
                     st.warning("Сонгосон сэдэвт хангалттай үг байхгүй байна (Дор хаяж 4 үг шаардлагатай).")
                 else:
-                    total_q_count = st.slider("Нийт асуултын тоо:", min_value=4, max_value=min(30, len(filtered_vocab)), value=min(10, len(filtered_vocab)))
-                    
+                    if chosen_sub == "Бүх дэд сэдэв":
+                        st.info(f"📌 Бүлэг сэдэв сонгосон тул нийт **{actual_q_count}** асуулттай сорилт үүснэ (6 Монгол->Англи, 14 Англи->Монгол).")
+                    else:
+                        st.info(f"📌 Дэд сэдэв сонгосон тул нийт **{actual_q_count}** асуулттай сорилт үүснэ (3 Монгол->Англи, 7 Англи->Монгол).")
+
                     if st.button("🚀 Сорилт эхлэх"):
-                        sampled = random.sample(filtered_vocab, total_q_count)
+                        sampled = random.sample(filtered_vocab, actual_q_count)
                         quiz_items = []
                         
-                        mn_en_count = max(1, int(total_q_count * 0.3))
+                        actual_mn_en = max(1, int(actual_q_count * 0.3))
                         
-                        for i in range(mn_en_count):
+                        for i in range(actual_mn_en):
                             item = sampled[i]
                             wrongs = random.sample([v['en'] for v in filtered_vocab if v['en'] != item['en']], min(3, len(filtered_vocab)-1))
                             opts = [item['en']] + wrongs
                             random.shuffle(opts)
                             quiz_items.append({
-                                "question": f"Монгол утга: '{item['mn']}' -> Англи терминийг сонгоно уу:",
+                                "question": f"'{item['mn']}' -> Англи утгыг сонгоно уу:",
                                 "options": opts, "correct": item['en']
                             })
                         
-                        for i in range(mn_en_count, total_q_count):
+                        for i in range(actual_mn_en, actual_q_count):
                             item = sampled[i]
                             wrongs = random.sample([v['mn'] for v in filtered_vocab if v['en'] != item['en']], min(3, len(filtered_vocab)-1))
                             opts = [item['mn']] + wrongs
                             random.shuffle(opts)
                             quiz_items.append({
-                                "question": f"Англи термин: '{item['en']}' -> Монгол утгыг сонгоно уу:",
+                                "question": f"'{item['en']}' -> Монгол утгыг сонгоно уу:",
                                 "options": opts, "correct": item['mn']
                             })
                         
                         st.session_state.active_quiz = quiz_items
                         st.session_state.quiz_start_time = pd.Timestamp.now()
+                        st.session_state.quiz_title_name = f"Нэр томьёоны сорилт ({chosen_cat} / {chosen_sub})"
                         st.rerun()
                     
                     if 'active_quiz' in st.session_state:
                         start_t = st.session_state.get('quiz_start_time', pd.Timestamp.now())
                         elapsed = int((pd.Timestamp.now() - start_t).total_seconds())
-                        st.info(f"⏱️ Сорилт үргэлжлэх хугацаа: {elapsed // 60} минут {elapsed % 60} секунд")
+                        st.info(f"⏱️ **Сорилт ажилласан хугацаа:** {elapsed // 60} минут {elapsed % 60} секунд")
                         
                         with st.form("quiz_form"):
                             user_answers = []
@@ -568,11 +580,31 @@ else:
                                 score = sum(1 for a, c in user_answers if a == c)
                                 total = len(st.session_state.active_quiz)
                                 percent = int((score / total) * 100)
+                                
                                 st.success(f"🎉 Сорилт дууслаа! Таны авсан оноо: {score} / {total} ({percent}%)")
+                                
+                                # Багшийн анализ / дүнгийн тайлан руу автоматаар илгээх бүртгэл
+                                q_title = st.session_state.get('quiz_title_name', 'Нэр томьёоны сорилт')
+                                res = load_json(HW_RESULT_FILE, {})
+                                if user['username'] not in res: 
+                                    res[user['username']] = {}
+                                
+                                res[user['username']][q_title] = {
+                                    "answer": f"Оноо: {score}/{total} ({percent}%), Зарцуулсан хугацаа: {elapsed // 60}м {elapsed % 60}с",
+                                    "date": str(pd.Timestamp.now().date()),
+                                    "status": "Өгсөн"
+                                }
+                                save_json(HW_RESULT_FILE, res)
+                                
+                                # Цэвэрлэх
                                 del st.session_state.active_quiz
                                 if 'quiz_start_time' in st.session_state:
                                     del st.session_state.quiz_start_time
-
+                                if 'quiz_title_name' in st.session_state:
+                                    del st.session_state.quiz_title_name
+        
+        # --- Миний гэрийн даалгавар ---
+        
         elif menu_choice == "📚 Миний гэрийн даалгавар":
             st.subheader("📚 Миний гэрийн даалгаврууд")
             homeworks = st.session_state.get('homeworks', [])
