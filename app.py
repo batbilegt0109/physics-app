@@ -91,9 +91,49 @@ if not st.session_state.logged_in:
                 st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
     with col2:
         st.info("💡 **Анхаарна уу:** Сурагчдын нууц үгийг зөвхөн багш систем дотроос удирдах боломжтой бөгөөд сурагч өөрөө өөрчлөх боломжгүй.")
-    # --- БАГШИЙН ХЭСЭГ (Үргэлжлэл - 2-р хэсэг) ---
+
+# ---- НЭВТЭРСНИЙ ДАРААХ ХЭСЭГ ----
+else:
+    user = st.session_state.user_info
+    
+    with st.sidebar:
+        st.title("⚡ Физикийн систем")
+        st.success(f"👤 {user['name']}\n\nЭрх: **{user['role']}**")
+        
+        if user['role'] == 'Багш':
+            menu_choice = st.radio(
+                "📌 Багшийн цэс:",
+                [
+                    "🏫 Ангиуд удирдах",
+                    "👥 Сурагч & Нууц үг удирдах",
+                    "➕ Үгсийн сан удирдах",
+                    "📚 Гэрийн даалгавар удирдах",
+                    "📝 Шалгалт удирдах",
+                    "🤖 AI тест генератор",
+                    "📊 Дүн шинжилгээ (Analytics)"
+                ]
+            )
+        else:
+            menu_choice = st.radio(
+                "📌 Сурагчийн цэс:",
+                [
+                    "📝 Нэр томьёоны сорилт (10 тест)",
+                    "📚 Гэрийн даалгавар",
+                    "📋 Бүлэг сэдвийн шалгалтууд",
+                    "📖 Толь бичиг (Хайх & Эрэмбэлэх)"
+                ]
+            )
+
+        st.divider()
+        if st.button("🚪 Гарах (Log out)", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user_info = None
+            if "user" in st.query_params:
+                del st.query_params["user"]
+            st.rerun()
+
+    # --- БАГШИЙН ХЭСЭГ ---
     if user['role'] == 'Багш':
-        # 1. Ангиуд удирдах
         if menu_choice == "🏫 Ангиуд удирдах":
             st.subheader("Анги бүлгүүдийн жагсаалт ба нэмэх")
             new_class_name = st.text_input("Шинэ ангийн нэр (Жишээ нь: 10в, 12а)").strip()
@@ -109,11 +149,9 @@ if not st.session_state.logged_in:
             st.write("### Одоогийн ангиуд:")
             st.write(", ".join([f"**{c}**" for c in st.session_state.classes]))
 
-        # 2. Сурагч & Нууц үг удирдах (Багш сурагчийн нууц үгийг шууд өөрчлөх боломжтой)
         elif menu_choice == "👥 Сурагч & Нууц үг удирдах":
             st.subheader("Сурагчдын бүртгэл болон нууц үг шинэчлэх")
             
-            # Шинэ сурагч бүртгэх
             with st.expander("➕ Шинэ сурагч бүртгэх"):
                 s_user = st.text_input("Сурагчийн нэвтрэх нэр (Username)").strip().lower()
                 s_pass = st.text_input("Шинэ нууц үг").strip()
@@ -161,7 +199,6 @@ if not st.session_state.logged_in:
                                 else:
                                     st.warning("Нууц үг хоосон байна.")
 
-        # 3. Үгсийн сан удирдах
         elif menu_choice == "➕ Үгсийн сан удирдах":
             st.subheader("📚 Физикийн нэр томьёоны сан")
             sub_tab1, sub_tab2 = st.tabs(["Нэг нэгээр нэмэх / Засах", "Файлаар олон үг оруулах"])
@@ -220,10 +257,8 @@ if not st.session_state.logged_in:
                             st.success(f"Нийт {count} үг нэмэгдлээ!")
                     except Exception as e:
                         st.error(f"Алдаа гарлаа: {e}")
-    # --- БАГШИЙН ХЭСЭГ (Үргэлжлэл - 3-р хэсэг) ---
-    elif user['role'] == 'Багш':
-        # 4. Гэрийн даалгавар удирдах
-        if menu_choice == "📚 Гэрийн даалгавар удирдах":
+
+        elif menu_choice == "📚 Гэрийн даалгавар удирдах":
             st.subheader("📚 Гэрийн даалгавар үүсгэх ба хянах")
             hw_tab1, hw_tab2 = st.tabs(["Гэрийн даалгавар үүсгэх", "Гүйцэтгэлийг хянах"])
             
@@ -268,7 +303,6 @@ if not st.session_state.logged_in:
                             })
                     st.dataframe(pd.DataFrame(hw_summary), use_container_width=True)
 
-        # 5. Шалгалт удирдах
         elif menu_choice == "📝 Шалгалт удирдах":
             st.subheader("📝 Шалгалт үүсгэх ба удирдах")
             ex_title = st.text_input("Шалгалтын нэр").strip()
@@ -316,9 +350,75 @@ if not st.session_state.logged_in:
                     else:
                         st.warning("Шалгалтын нэрийг оруулна уу.")
 
-# --- СУРАГЧИЙН ХЭСЭГ БОЛОН ТӨГСГӨЛ (4-р хэсэг) ---
+        elif menu_choice == "🤖 AI тест генератор":
+            st.subheader("🤖 AI ашиглан автоматаар тест үүсгэх")
+            st.write("Систем дэх үгсийн санд үндэслэн AI автоматаар сорилт үүсгэнэ.")
+            
+            ai_cat = st.selectbox("Сэдэв сонгох:", ["Бүгд"] + list(set([v.get('category', 'Бусад') for v in st.session_state.vocab])))
+            q_count = st.slider("Үүсгэх асуултын тоо:", min_value=3, max_value=10, value=5)
+            ai_title = st.text_input("AI Шалгалтын нэр", value="AI сорилт")
+            
+            if st.button("✨ AI Тест үүсгэх"):
+                vocab_pool = st.session_state.vocab if ai_cat == "Бүгд" else [v for v in st.session_state.vocab if v.get('category') == ai_cat]
+                if len(vocab_pool) < 4:
+                    st.warning("Дор хаяж 4 үг байх шаардлагатай.")
+                else:
+                    selected = random.sample(vocab_pool, min(q_count, len(vocab_pool)))
+                    q_list = []
+                    for item in selected:
+                        wrong = random.sample([v for v in st.session_state.vocab if v['en'] != item['en']], min(3, len(st.session_state.vocab)-1))
+                        opts = [item['mn']] + [w['mn'] for w in wrong]
+                        random.shuffle(opts)
+                        q_list.append({
+                            "question": f"'{item['en']}' терминий монгол утгыг олно уу.",
+                            "options": opts,
+                            "correct": item['mn']
+                        })
+                    st.session_state.ai_exam = {
+                        "id": str(random.randint(1000, 9999)),
+                        "title": ai_title,
+                        "description": "AI генератораар үүсгэсэн сорилт.",
+                        "questions": q_list
+                    }
+                    st.success("AI тест амжилттай үүслээ! Доор хараад нийтэлнэ үү.")
+
+            if 'ai_exam' in st.session_state and st.session_state.ai_exam:
+                st.write(f"### {st.session_state.ai_exam['title']}")
+                for idx, q in enumerate(st.session_state.ai_exam['questions']):
+                    st.write(f"**{idx+1}. {q['question']}** (Зөв хариу: {q['correct']})")
+                if st.button("🚀 Энэ AI шалгалтыг нийтлэх"):
+                    st.session_state.exams.append(st.session_state.ai_exam)
+                    save_json(EXAM_FILE, st.session_state.exams)
+                    st.session_state.ai_exam = None
+                    st.success("Шалгалт амжилттай нийтлэгдлээ!")
+                    st.rerun()
+
+        elif menu_choice == "📊 Дүн шинжилгээ (Analytics)":
+            st.subheader("📈 Сурагчдын үр дүнгийн тайлан")
+            res_db = load_json(RESULT_FILE, {})
+            ex_res_db = load_json(EXAM_RESULT_FILE, {})
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("### 10 Тестийн сорилтын дүн")
+                if not res_db:
+                    st.info("Мэдээлэл байхгүй.")
+                else:
+                    data = [{"Сурагч": k, "Оноо": v[-1]['score']} for k, v in res_db.items()]
+                    st.dataframe(pd.DataFrame(data), use_container_width=True)
+            with c2:
+                st.markdown("### Бүлэг сэдвийн шалгалтын дүн")
+                if not ex_res_db:
+                    st.info("Мэдээлэл байхгүй.")
+                else:
+                    ex_data = []
+                    for s_name, sub in ex_res_db.items():
+                        for title, score in sub.items():
+                            ex_data.append({"Сурагч": s_name, "Шалгалт": title, "Оноо": score})
+                    st.dataframe(pd.DataFrame(ex_data), use_container_width=True)
+
+    # --- СУРАГЧИЙН ХЭСЭГ ---
     else:
-        # 1. 10 Тестийн сорилт
         if menu_choice == "📝 Нэр томьёоны сорилт (10 тест)":
             st.subheader("📝 Физикийн нэр томьёоны сорилт (Яг 10 тест)")
             vocab_list = st.session_state.vocab
@@ -343,7 +443,6 @@ if not st.session_state.logged_in:
                                 'en': item['en'],
                                 'correct': item['mn'],
                                 'options': options
-                                # Тайлбар хэсэг нууцлагдсан
                             })
                         ses['active'] = True
                         ses['questions'] = q_list
@@ -379,7 +478,6 @@ if not st.session_state.logged_in:
                             ses['active'] = False
                             st.rerun()
 
-        # 2. Гэрийн даалгавар гүйцэтгэх
         elif menu_choice == "📚 Гэрийн даалгавар":
             st.subheader("📚 Миний гэрийн даалгаврууд")
             homeworks = st.session_state.get('homeworks', [])
@@ -410,7 +508,6 @@ if not st.session_state.logged_in:
                                 else:
                                     st.warning("Хариултаа бичнэ үү.")
 
-        # 3. Бүлэг сэдвийн шалгалт өгөх
         elif menu_choice == "📋 Бүлэг сэдвийн шалгалтууд":
             st.subheader("📋 Идэвхтэй шалгалтууд")
             exams = st.session_state.get('exams', [])
@@ -444,7 +541,6 @@ if not st.session_state.logged_in:
                             exam_res_db[u_key][selected_exam['title']] = f"{score_count}/{total_q}"
                             save_json(EXAM_RESULT_FILE, exam_res_db)
 
-        # 4. Толь бичиг
         elif menu_choice == "📖 Толь бичиг (Хайх & Эрэмбэлэх)":
             st.subheader("📖 Физикийн нэр томьёоны толь бичиг")
             search_query = st.text_input("🔍 Хайх үг").strip().lower()
