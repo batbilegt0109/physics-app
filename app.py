@@ -490,7 +490,7 @@ else:
                             opts = [item['en']] + wrongs
                             random.shuffle(opts)
                             quiz_items.append({
-                                "question": f"Монгол утга: '{item['mn']}' -> Англи терминийг сонгоно уу:",
+                                "question": f"'{item['mn']}' -> Англи утгыг сонгоно уу:",
                                 "options": opts, "correct": item['en']
                             })
                         
@@ -500,7 +500,7 @@ else:
                             opts = [item['mn']] + wrongs
                             random.shuffle(opts)
                             quiz_items.append({
-                                "question": f"Англи термин: '{item['en']}' -> Монгол утгыг сонгоно уу:",
+                                "question": f"А'{item['en']}' -> Монгол утгыг сонгоно уу:",
                                 "options": opts, "correct": item['mn']
                             })
                         
