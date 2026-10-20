@@ -5,7 +5,7 @@ import os
 import random
 
 # Хуудасны тохиргоо
-st.set_page_config(page_title="Физикийн ухаалаг систем", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="GTIS Physics", page_icon="⚡", layout="wide")
 
 VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
@@ -94,7 +94,7 @@ else:
                 del st.query_params["user"]
             st.rerun()
 
-    st.title("⚡ Физикийн нэр томьёоны ухаалаг систем")
+    st.title("⚡ Физикийн ухаалаг систем")
     
     # --- БАГШИЙН ЦЭС ---
     if user['role'] == 'Багш':
