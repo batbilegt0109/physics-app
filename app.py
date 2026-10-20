@@ -15,7 +15,6 @@ EXAM_FILE = "exam_data.json"
 CLASS_FILE = "class_data.json"
 HOMEWORK_FILE = "homework_data.json"
 HW_RESULT_FILE = "hw_result_data.json"
-EXAM_RESULT_FILE = "exam_result_data.json"
 
 # --- ФУНКЦҮҮД ---
 def load_json(filename, default_val):
@@ -31,14 +30,21 @@ def save_json(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Бааз өгөгдлүүд
+# Dynamic Бааз өгөгдөл
 if 'vocab' not in st.session_state:
     st.session_state.vocab = load_json(VOCAB_FILE, [])
 
 if 'users' not in st.session_state:
-    st.session_state.users = load_json(USER_FILE, {
-        'batbilegt.ya': {'password': '123', 'role': 'Админ', 'name': 'batbilegt.ya', 'class': 'Бүгд'}
-    })
+    users_data = load_json(USER_FILE, {})
+    # batbilegt.ya Админ аккаунтыг заавал байхаар бататгаж байна
+    users_data['batbilegt.ya'] = {
+        'password': '123',
+        'role': 'Админ',
+        'name': 'batbilegt.ya',
+        'class': 'Бүгд'
+    }
+    st.session_state.users = users_data
+    save_json(USER_FILE, st.session_state.users)
 
 if 'classes' not in st.session_state:
     st.session_state.classes = load_json(CLASS_FILE, [])
@@ -63,6 +69,7 @@ if not st.session_state.logged_in:
     with tab_login:
         col1, _ = st.columns([1, 2])
         with col1:
+            st.info("💡 **Админ нэвтрэх:** Username: `batbilegt.ya` | Нууц үг: `123`")
             username_input = st.text_input("Нэвтрэх нэр (Username)").strip()
             password_input = st.text_input("Нууц үг (Password)", type="password").strip()
             login_btn = st.button("Нэвтрэх", use_container_width=True)
@@ -226,10 +233,8 @@ else:
                 if not st.session_state.vocab:
                     st.info("Үгсийн сан хоосон байна.")
                 else:
-                    st.markdown("💡 *Та доорх хүснэгт дээр шууд дарж үгсийг засах боломжтой. Мөн устгахыг хүссэн мөрөө сонгоод хадгална уу.*")
+                    st.markdown("💡 *Хүснэгт дээр шууд засна уу. Мөн мөр сонгоод Delete товчоор устгах боломжтой.*")
                     df_vocab = pd.DataFrame(st.session_state.vocab)
-                    
-                    # Data editor for inline editing
                     edited_df = st.data_editor(df_vocab, use_container_width=True, num_rows="dynamic", key="vocab_editor")
                     
                     if st.button("💾 Өөрчлөлтийг хадгалах"):
@@ -408,7 +413,7 @@ else:
                     st.success("🤖 AI тест амжилттай үүсэж, шалгалтын жагсаалтад нэмэгдлээ!")
 
         elif menu_choice == "📊 Дүн анализ, Архив & Excel":
-            st.subheader("📊 Дүн шинжилгээ, Үр дүн & Архивлалт")
+            st.subheader("📊 Дүн шинжилгээ, Үр дүн & Архиवलाлт")
             
             hw_res = load_json(HW_RESULT_FILE, {})
             if not hw_res:
@@ -470,7 +475,6 @@ else:
                         quiz_items = []
                         mn_en_count = min(3, len(sampled))
                         
-                        # 3 ширхэг Монгол -> Англи
                         for i in range(mn_en_count):
                             item = sampled[i]
                             wrongs = random.sample([v['en'] for v in filtered_vocab if v['en'] != item['en']], min(3, len(filtered_vocab)-1))
@@ -481,7 +485,6 @@ else:
                                 "options": opts, "correct": item['en']
                             })
                         
-                        # 7 ширхэг Англи -> Монгол
                         for i in range(mn_en_count, len(sampled)):
                             item = sampled[i]
                             wrongs = random.sample([v['mn'] for v in filtered_vocab if v['en'] != item['en']], min(3, len(filtered_vocab)-1))
