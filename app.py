@@ -32,7 +32,7 @@ def save_json(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Session state инициализаци (Ямар ч урьдчилан оруулсан хуурамч өгөгдөл байхгүй, цэвэр суурь)
+# Session state инициализаци
 if 'vocab' not in st.session_state:
     st.session_state.vocab = load_json(VOCAB_FILE, [])
 
@@ -59,7 +59,7 @@ if not st.session_state.logged_in:
     st.title("⚡ Физикийн ухаалаг сургалтын систем (GTIS)")
     st.subheader("Системд нэвтрэх")
     
-    tab_login, tab_register = st.tabs(["🔑 Нэвтрэх", "📝 Сурагч бүртгүүлэх"])
+    tab_login, tab_register = st.tabs(["🔑 Нэвтрэх", "📝 Сурагч өөрөө бүртгүүлэх"])
     
     with tab_login:
         col1, col2 = st.columns([1, 2])
@@ -117,8 +117,8 @@ else:
                 "📌 Багшийн цэс:",
                 [
                     "🏫 Ангиуд удирдах",
-                    "👥 Сурагчдын жагсаалт",
-                    "➕ Үгсийн сан удирдах",
+                    "👥 Сурагч & Нууц үг удирдах",
+                    "➕ Үгсийн сан удирдах (Файлаар оруулах)",
                     "📚 Гэрийн даалгавар өгөх",
                     "📝 Шалгалт удирдах",
                     "🤖 AI тест генератор",
@@ -174,30 +174,131 @@ else:
                             st.success(f"'{c_name}' анги устгагдлаа!")
                             st.rerun()
 
-        elif menu_choice == "👥 Сурагчдын жагсаалт":
-            st.subheader("👥 Бүртгэлтэй сурагчдын жагсаалт")
-            s_list = {k: v for k, v in st.session_state.users.items() if v['role'] == 'Сурагч'}
-            if not s_list:
-                st.info("Сурагч бүртгэгдээгүй байна.")
-            else:
-                rows = [{"Username": k, "Нэр": v['name'], "Бүлэг/Анги": v.get('class', '-')} for k, v in s_list.items()]
-                df_s = pd.DataFrame(rows)
-                st.dataframe(df_s, use_container_width=True)
+        elif menu_choice == "👥 Сурагч & Нууц үг удирдах":
+            st.subheader("👥 Сурагчдын бүртгэл болон нууц үг шинэчлэх")
+            
+            with st.expander("➕ Шинэ сурагч бүртгэх"):
+                if not st.session_state.classes:
+                    st.warning("Эхлээд 'Ангиуд удирдах' хэсгээс анги үүсгэнэ үү!")
+                else:
+                    s_user = st.text_input("Сурагчийн нэвтрэх нэр (Username)").strip().lower()
+                    s_pass = st.text_input("Нууц үг", type="password").strip()
+                    s_name = st.text_input("Сурагчийн бүтэн нэр").strip()
+                    s_class = st.selectbox("Анги сонгох", st.session_state.classes)
+                    
+                    if st.button("Сурагч бүртгэх"):
+                        if s_user and s_pass and s_name:
+                            if s_user in st.session_state.users:
+                                st.error("Энэ username аль хэдийн бүртгэгдсэн байна!")
+                            else:
+                                st.session_state.users[s_user] = {
+                                    'password': s_pass,
+                                    'role': 'Сурагч',
+                                    'name': s_name,
+                                    'class': s_class
+                                }
+                                save_json(USER_FILE, st.session_state.users)
+                                st.success(f"'{s_name}' сурагч амжилттай бүртгэгдлээ!")
+                                st.rerun()
+                        else:
+                            st.warning("Бүх талбарыг бүрэн бөглөнө үү.")
 
-        elif menu_choice == "➕ Үгсийн сан удирдах":
-            st.subheader("📚 Үгсийн сан")
-            cat = st.text_input("Бүлэг сэдэв (Оптик, Механик г.м)")
-            en = st.text_input("Англи термин")
-            mn = st.text_input("Монгол утга")
-            desc = st.text_input("Товч тайлбар")
-            if st.button("Үг нэмэх"):
-                if cat and en and mn:
-                    st.session_state.vocab.append({"category": cat, "en": en, "mn": mn, "description": desc or "-"})
-                    save_json(VOCAB_FILE, st.session_state.vocab)
-                    st.success("Үг нэмэгдлээ!")
-                    st.rerun()
-            if st.session_state.vocab:
-                st.dataframe(pd.DataFrame(st.session_state.vocab), use_container_width=True)
+            st.divider()
+            st.markdown("### 📋 Бүртгэлтэй сурагчдын удирдлага (Нэр, Нууц үг солих & Устгах)")
+            student_list = {k: v for k, v in st.session_state.users.items() if v['role'] == 'Сурагч'}
+            
+            if not student_list:
+                st.info("Бүртгэлтэй сурагч байхгүй байна.")
+            else:
+                for s_username, s_data in student_list.items():
+                    with st.container(border=True):
+                        st.write(f"👤 **{s_data['name']}** | Username: `{s_username}` | Анги: **{s_data.get('class', 'Ангигүй')}**")
+                        
+                        col_u1, col_u2, col_u3 = st.columns([2, 2, 1])
+                        with col_u1:
+                            new_name = st.text_input("Нэр засах", value=s_data['name'], key=f"name_{s_username}")
+                        with col_u2:
+                            new_p = st.text_input("Шинэ нууц үг", type="password", placeholder="Өөрчлөх бол бичнэ үү", key=f"pass_{s_username}")
+                        with col_u3:
+                            st.write("")
+                            st.write("")
+                            update_clicked = st.button("💾 Хадгалах", key=f"btn_up_{s_username}")
+                        
+                        if st.button("🗑️ Сурагч устгах", key=f"del_user_{s_username}"):
+                            del st.session_state.users[s_username]
+                            save_json(USER_FILE, st.session_state.users)
+                            st.success(f"'{s_username}' сурагч устгагдлаа!")
+                            st.rerun()
+                        
+                        if update_clicked:
+                            st.session_state.users[s_username]['name'] = new_name
+                            if new_p:
+                                st.session_state.users[s_username]['password'] = new_p
+                            save_json(USER_FILE, st.session_state.users)
+                            st.success(f"'{s_username}' мэдээлэл шинэчлэгдлээ!")
+                            st.rerun()
+
+        elif menu_choice == "➕ Үгсийн сан удирдах (Файлаар оруулах)":
+            st.subheader("📚 Үгсийн сан удирдах ба Файлаар оруулах")
+            sub_tab1, sub_tab2 = st.tabs(["Нэг нэгээр нэмэх / Засах", "Файлаар олон үг оруулах (Excel / CSV)"])
+            
+            with sub_tab1:
+                c_col1, c_col2 = st.columns(2)
+                with c_col1:
+                    st.markdown("#### Шинэ үг нэмэх")
+                    cat = st.text_input("Бүлэг сэдэв (Оптик, Механик г.м)").strip()
+                    en = st.text_input("Англи термин").strip()
+                    mn = st.text_input("Монгол утга").strip()
+                    desc = st.text_area("Товч тайлбар").strip()
+                    if st.button("Үг нэмэх"):
+                        if cat and en and mn:
+                            st.session_state.vocab.append({"category": cat, "en": en, "mn": mn, "description": desc or "-"})
+                            save_json(VOCAB_FILE, st.session_state.vocab)
+                            st.success("Үг нэмэгдлээ!")
+                            st.rerun()
+                        else:
+                            st.warning("Сэдэв, Англи болон Монгол утгыг заавал оруулна уу.")
+                with c_col2:
+                    st.markdown("#### Одоогийн үгсийг устгах")
+                    if not st.session_state.vocab:
+                        st.info("Үгсийн сан хоосон байна.")
+                    else:
+                        df_v = pd.DataFrame(st.session_state.vocab)
+                        df_v.insert(0, "Устгах", False)
+                        edited_v = st.data_editor(df_v, use_container_width=True, key="vocab_ed")
+                        if st.button("Чеклэсэн үгсийг устгах"):
+                            new_v = []
+                            for idx, row in edited_v.iterrows():
+                                if not row["Устгах"]:
+                                    new_v.append({"category": row.get("category", "Бусад"), "en": row["en"], "mn": row["mn"], "description": row["description"]})
+                            st.session_state.vocab = new_v
+                            save_json(VOCAB_FILE, st.session_state.vocab)
+                            st.success("Устгагдлаа!")
+                            st.rerun()
+            
+            with sub_tab2:
+                st.info("Файлын формат: `category`, `en`, `mn`, `description` багануудтай `.csv` эсвэл `.xlsx` файл байх ёстой.")
+                up_file = st.file_uploader("Файл сонгох", type=['csv', 'xlsx'])
+                if up_file:
+                    try:
+                        df_up = pd.read_csv(up_file) if up_file.name.endswith('.csv') else pd.read_excel(up_file)
+                        st.dataframe(df_up.head())
+                        if st.button("Файлаас үгсийг хуулж оруулах"):
+                            count = 0
+                            for _, r in df_up.iterrows():
+                                if 'en' in df_up.columns and 'mn' in df_up.columns:
+                                    st.session_state.vocab.append({
+                                        "category": str(r.get('category', 'Бусад')),
+                                        "en": str(r['en']),
+                                        "mn": str(r['mn']),
+                                        "description": str(r.get('description', '-'))
+                                    })
+                                    count += 1
+                            save_json(VOCAB_FILE, st.session_state.vocab)
+                            st.success(f"Нийт {count} үг амжилттай нэмэгдлээ!")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Файл унших үед алдаа гарлаа: {e}")
 
         elif menu_choice == "📚 Гэрийн даалгавар өгөх":
             st.subheader("📚 Ангид даалгавар өгөх")
@@ -354,7 +455,6 @@ else:
             homeworks = st.session_state.get('homeworks', [])
             my_class = user.get('class', '')
             
-            # Тухайн ангид эсвэл "Бүгд"-д зориулсан даалгавруудыг шүүж харуулах
             filtered_hw = [
                 hw for hw in homeworks 
                 if hw.get('target_class') == "Бүгд" or hw.get('target_class') == my_class
