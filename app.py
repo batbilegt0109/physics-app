@@ -458,42 +458,53 @@ else:
                     st.success("🤖 AI тест амжилттай үүсэж, шалгалтын жагсаалтад нэмэгдлээ!")
 
         elif menu_choice == "📊 Дүн анализ, Архив & Excel":
-            st.subheader("📊 Дүн шинжилгээ, Үр дүн & Архивлалт")
+            st.subheader("📊 Дүн шинжилгээ, Үр дүн & Тайлан (Анги, бүлгээр)")
             
             hw_res = load_json(HW_RESULT_FILE, {})
             if not hw_res:
-                st.info("Одоогоор ирүүлсэн даалгавар байхгүй байна.")
+                st.info("Одоогоор ирүүлсэн даалгавар болон сорилтын дүн байхгүй байна.")
             else:
                 rows = []
                 for s_u, sub in hw_res.items():
-                    u_cls = st.session_state.users.get(s_u, {}).get('class', '-')
-                    u_name = st.session_state.users.get(s_u, {}).get('name', s_u)
+                    user_det = st.session_state.users.get(s_u, {})
+                    u_cls = user_det.get('class', 'Тодорхойгүй')  # Жишээ нь: 6а, 6б, 6в
+                    u_name = user_det.get('name', s_u)
+                    
                     for h_t, det in sub.items():
                         rows.append({
-                            "Анги": u_cls,
+                            "Анги / Бүлэг": u_cls,
                             "Сурагч": u_name,
                             "Username": s_u,
-                            "Даалгавар": h_t,
-                            "Хариулт": det['answer'],
+                            "Ажил / Сорилт": h_t,
+                            "Үр дүн / Хариулт": det['answer'],
                             "Огноо": det['date'],
-                            "Төлөв": det.get('status', 'Идэвхтэй')
+                            "Төлөв": det.get('status', 'Өгсөн')
                         })
                 
                 df_res = pd.DataFrame(rows)
-                selected_cls = st.selectbox("Ангиар шүүх:", ["Бүх анги"] + sorted(list(df_res["Анги"].unique())))
                 
-                filtered_df = df_res if selected_cls == "Бүх анги" else df_res[df_res["Анги"] == selected_cls]
+                # Шүүлтүүр хэсэг: Бүх анги эсвэл тодорхой бүлгээр (6а, 6б, 6в...) шүүх
+                available_classes = sorted(list(df_res["Анги / Бүлэг"].unique()))
+                selected_cls = st.selectbox("📌 Анги / Бүлгээр шүүж харах:", ["Бүх анги / бүлэг"] + available_classes)
+                
+                filtered_df = df_res if selected_cls == "Бүх анги / бүлэг" else df_res[df_res["Анги / Бүлэг"] == selected_cls]
+                
+                st.markdown(f"### Сонгосон ангийн дүнгийн жагсаалт (Нийт: {len(filtered_df)} үр дүн)")
                 st.dataframe(filtered_df, use_container_width=True)
                 
                 col_d1, col_d2 = st.columns(2)
                 with col_d1:
                     output = io.BytesIO()
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        filtered_df.to_excel(writer, index=False, sheet_name='Analytics')
-                    st.download_button("📥 Дүнгийн тайланг Excel (.xlsx) татах", data=output.getvalue(), file_name="Physics_Analysis.xlsx")
+                        filtered_df.to_excel(writer, index=False, sheet_name='Analytics_Report')
+                    st.download_button(
+                        f"📥 '{selected_cls}' тайланг Excel (.xlsx) татах", 
+                        data=output.getvalue(), 
+                        file_name=f"Physics_Analysis_{selected_cls}.xlsx"
+                    )
                 
                 with col_d2:
-                    if st.button("📁 Архивлах (Дууссан даалгавруудыг архивлах)"):
+                    if st.button("📁 Архивлах (Дууссан дүн мэдээг архивлах)"):
                         st.success("Үр дүн амжилттай архивлав.")
 
     # --- СУРАГЧИЙН ЦЭС ---
