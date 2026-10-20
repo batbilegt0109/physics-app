@@ -127,17 +127,31 @@ else:
         st.title("⚡ Физикийн систем")
         st.success(f"👤 **{user['name']}** ({user['role']})")
         
-        # --- ТҮРГЭН ШАЛГАХ РЕЖИМ (Зөвхөн админд зориулж нэг компьютер дээр эрх сольж шалгах боломж) ---
-        if user.get('username') == 'batbilegt.ya':
+        # --- БАТТАЙ АДМИН ТЕСТ ХЭРЭГСЭЛ (Жинхэнэ админ байхад хэзээ ч алга болохгүй) ---
+        if st.session_state.get('real_admin') == 'batbilegt.ya' or user.get('username') == 'batbilegt.ya' or user.get('role') == 'Админ':
+            if not st.session_state.get('real_admin'):
+                st.session_state.real_admin = 'batbilegt.ya'
+                
             st.markdown("---")
             st.markdown("🛠️ **Админ тест хийх хэрэгсэл:**")
             all_usernames = list(st.session_state.users.keys())
-            selected_test_user = st.selectbox("Өөр хэрэглэгч рүү шилжих:", all_usernames, key="role_switcher")
+            
+            current_selected = user.get('username', 'batbilegt.ya')
+            default_idx = all_usernames.index(current_selected) if current_selected in all_usernames else 0
+            
+            selected_test_user = st.selectbox("Өөр хэрэглэгч рүү шилжих:", all_usernames, index=default_idx, key="role_switcher")
             if st.button("🔄 Энэ эрх рүү шилжиж шалгах"):
-                st.session_state.user_info = st.session_state.users[selected_test_user]
-                st.session_state.user_info['username'] = selected_test_user
-                st.query_params["logged_user"] = selected_test_user
+                u_switch = st.session_state.users[selected_test_user].copy()
+                u_switch['username'] = selected_test_user
+                st.session_state.user_info = u_switch
                 st.rerun()
+                
+            if user.get('username') != 'batbilegt.ya':
+                if st.button("⬅️ Админ руу буцах", use_container_width=True):
+                    admin_u = st.session_state.users['batbilegt.ya'].copy()
+                    admin_u['username'] = 'batbilegt.ya'
+                    st.session_state.user_info = admin_u
+                    st.rerun()
             st.markdown("---")
 
         if user['role'] in ['Админ', 'Багш']:
