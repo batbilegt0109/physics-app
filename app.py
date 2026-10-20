@@ -9,18 +9,31 @@ st.set_page_config(page_title="GTIS Physics", page_icon="⚡", layout="wide")
 
 VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
+RESULT_FILE = "result_data.json"  # <-- Шинээр үр дүн хадгалах файл нэмэх
 
 def load_data():
     if os.path.exists(VOCAB_FILE):
         with open(VOCAB_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return [
-        {"en": "Reflection", "mn": "Гэрлийн ойлт", "description": "Гэрлийн цацраг гадаргуугаас буцаж ойх үзэгдэл."},
-            ]
+        {"category": "Оптик", "en": "Reflection", "mn": "Гэрлийн ойлт", "description": "Гэрлийн цацраг гадаргуугаас буцаж ойх үзэгдэл."},
+    ]
 
 def save_data(vocab_list):
     with open(VOCAB_FILE, "w", encoding="utf-8") as f:
         json.dump(vocab_list, f, ensure_ascii=False, indent=4)
+
+# --- Шинээр үр дүн болон хэрэглэгчийн алдааг хадгалах функцүүд ---
+def load_results():
+    if os.path.exists(RESULT_FILE):
+        with open(RESULT_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_results(results_dict):
+    with open(RESULT_FILE, "w", encoding="utf-8") as f:
+        json.dump(results_dict, f, ensure_ascii=False, indent=4)
+# -------------------------------------------------------------
 
 def load_users():
     if os.path.exists(USER_FILE):
@@ -100,15 +113,20 @@ else:
     if user['role'] == 'Багш':
         st.header("👨‍🏫 Багшийн удирдлагын самбар")
         
-        tab1, tab2, tab3, tab4 = st.tabs([
+        # Шинэ Tab нэмэхэд tab5 болгон өргөжүүлнэ
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "➕ Нэг нэгээр үг нэмэх", 
             "✏️ Үг засах / 🗑️ Устгах", 
             "📁 Файлаар олон үг оруулах", 
-            "👥 Хэрэглэгч удирдах"
+            "👥 Хэрэглэгч удирдах",
+            "📊 Дүн шинжилгээ (Analytics)" # <-- Шинэ Tab
         ])
         
-        with tab1:
+       with tab1:
             st.subheader("Физикийн шинэ нэр томьёо нэмэх")
+            # --- Шинээр сэдэв сонгох хэсэг нэмэв ---
+            category = st.selectbox("Бүлэг сэдэв", ["Механик", "Цахилгаан соронзон", "Оптик", "Термодинамик", "Бусад"])
+            # ---------------------------------------
             en_word = st.text_input("Термин / Англи үг").strip()
             mn_word = st.text_input("Монгол утга").strip()
             desc_text = st.text_input("Товч тайлбар").strip()
@@ -116,6 +134,7 @@ else:
             if st.button("Үг нэмэх"):
                 if en_word and mn_word:
                     st.session_state.vocab.append({
+                        "category": category, # <-- Сэдвийг хамт хадгалах
                         "en": en_word, 
                         "mn": mn_word, 
                         "description": desc_text if desc_text else "-"
@@ -228,6 +247,20 @@ else:
                 else:
                     st.warning("Бүх талбарыг бөглөнө үү.")
 
+with tab5:
+            st.subheader("📈 Сурагчдын сорилтын нэгдсэн дүн")
+            results = load_results()
+            if not results:
+                st.info("Одоогоор шалгалт өгсөн сурагчийн мэдээлэл байхгүй байна.")
+            else:
+                summary_data = []
+                for s_name, data_list in results.items():
+                    total_tests = len(data_list)
+                    avg_score = sum([d['score'] for d in data_list]) / total_tests if total_tests > 0 else 0
+                    summary_data.append({"Сурагч": s_name, "Өгсөн тест": total_tests, "Дундаж оноо": round(avg_score, 1)})
+                
+                st.dataframe(pd.DataFrame(summary_data), use_container_width=True, hide_index=True)
+
     # --- СУРАГЧИЙН ЦЭС ---
     else:
         st.header("🎓 Сурагчийн суралцах болон сорилтын хэсэг")
@@ -264,10 +297,27 @@ else:
                 ans = st.radio("Энэ үгийн Монгол утгыг сонгоно уу:", q['options'], key="quiz_choice")
                 
                 if st.button("Хариу шалгах"):
+                    # Session state дээр үр дүнг түр хадгалах санах ой үүсгэх
+                    if 'results_db' not in st.session_state:
+                        st.session_state.results_db = load_results()
+                    
+                    user_key = user['username']
+                    if user_key not in st.session_state.results_db:
+                        st.session_state.results_db[user_key] = []
+
                     if ans == q['correct']:
                         st.success("🎉 Зөв байна! Сайн байна.")
+                        score = 1
                     else:
                         st.error(f"❌ Буруу байна. Зөв хариулт нь: **{q['correct']}**")
+                        score = 0
+                    
+                    # Үр дүнг файлд болон session рүү бүртгэх
+                    st.session_state.results_db[user_key].append({
+                        "word": q['en'],
+                        "score": score
+                    })
+                    save_results(st.session_state.results_db)
 
         with tab_s2:
             st.subheader("📖 Физикийн нэр томьёоны толь бичиг")
