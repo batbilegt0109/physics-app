@@ -30,14 +30,14 @@ def save_json(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Бааз өгөгдлүүд (Ямар ч хог хаягдалгүй, цэвэр эхлэл)
+# Бааз өгөгдлүүд
 if 'vocab' not in st.session_state:
     st.session_state.vocab = load_json(VOCAB_FILE, [])
 
 if 'users' not in st.session_state:
-    # Анхдагч Админ аккаунт ('admin' / '123')
+    # Үндсэн Админ аккаунт
     st.session_state.users = load_json(USER_FILE, {
-        'admin': {'password': '123', 'role': 'Админ', 'name': 'Админ Багш', 'class': 'Бүгд'}
+        'batbilegt.ya': {'password': '123', 'role': 'Админ', 'name': 'batbilegt.ya', 'class': 'Бүгд'}
     })
 
 if 'classes' not in st.session_state:
@@ -49,7 +49,7 @@ if 'exams' not in st.session_state:
 if 'homeworks' not in st.session_state:
     st.session_state.homeworks = load_json(HOMEWORK_FILE, [])
 
-# Тухайн браузер/таб дээр нэвтэрсэн хэрэглэгчийг хадгалах session_state
+# Тухайн цонхонд нэвтэрсэн хэрэглэгч
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_info = None
@@ -64,7 +64,7 @@ if not st.session_state.logged_in:
     with tab_login:
         col1, _ = st.columns([1, 2])
         with col1:
-            username_input = st.text_input("Нэвтрэх нэр (Username)").strip().lower()
+            username_input = st.text_input("Нэвтрэх нэр (Username)").strip()
             password_input = st.text_input("Нууц үг (Password)", type="password").strip()
             login_btn = st.button("Нэвтрэх", use_container_width=True)
             
@@ -80,7 +80,7 @@ if not st.session_state.logged_in:
                     
     with tab_register:
         st.markdown("### Сурагч өөрөө бүртгүүлэх")
-        reg_user = st.text_input("Шинэ Username").strip().lower()
+        reg_user = st.text_input("Шинэ Username").strip()
         reg_pass = st.text_input("Нууц үг", type="password").strip()
         reg_name = st.text_input("Овог, нэр").strip()
         
@@ -109,7 +109,8 @@ else:
     
     with st.sidebar:
         st.title("⚡ Физикийн систем")
-        st.success(f"👤 **{user['name']}**\n\nЭрх: **{user['role']}**")
+        # Цэвэрхэн харагдах байдал
+        st.success(f"👤 **{user['name']}** ({user['role']})")
         
         if user['role'] in ['Админ', 'Багш']:
             menu_options = [
@@ -120,9 +121,9 @@ else:
                 "🤖 AI тест генератор",
                 "📊 Дүн анализ & Excel"
             ]
-            # Зөвхөн Админ хэрэглэгч л бусад багш/сурагчдыг удирдах эрхтэй байна
-            if user['role'] == 'Админ' or user.get('username') == 'admin':
-                menu_options.insert(1, "👥 Хэрэглэгчид удирдах (Багш/Сурагч)")
+            # Зөвхөн Админ хэрэглэгч (batbilegt.ya эсвэл Админ эрхтэй) Багш/Сурагчдыг удирдана
+            if user['role'] == 'Админ' or user.get('username') == 'batbilegt.ya':
+                menu_options.insert(1, "👥 Багш & Сурагчдын бүртгэл удирдах")
                 
             menu_choice = st.radio("📌 Багшийн цэс:", menu_options)
         else:
@@ -142,7 +143,7 @@ else:
             st.session_state.user_info = None
             st.rerun()
 
-    # --- БАГШИЙН ЦЭС ---
+    # --- БАГШИЙН / АДМИНЫ ЦЭС ---
     if user['role'] in ['Админ', 'Багш']:
         if menu_choice == "🏫 Ангиуд удирдах":
             st.subheader("🏫 Анги / Бүлгүүдийг удирдах")
@@ -170,15 +171,15 @@ else:
                             save_json(CLASS_FILE, st.session_state.classes)
                             st.rerun()
 
-        elif menu_choice == "👥 Хэрэглэгчид удирдах (Багш/Сурагч)":
-            st.subheader("👥 Багш болон сурагчдын бүртгэл удирдах")
-            t_u1, t_u2 = st.tabs(["➕ Шинэ хэрэглэгч нэмэх", "📋 Бүртгэлтэй хэрэглэгчид"])
+        elif menu_choice == "👥 Багш & Сурагчдын бүртгэл удирдах":
+            st.subheader("👥 Багш болон сурагчдын бүртгэл удирдах (Зөвхөн Админ)")
+            t_u1, t_u2 = st.tabs(["➕ Шинэ Багш / Сурагч нэмэх", "📋 Бүртгэлтэй хэрэглэгчид"])
             
             with t_u1:
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    st.markdown("#### Шинэ Багш нэмэх")
-                    b_user = st.text_input("Багшийн Username", key="b_u").strip().lower()
+                    st.markdown("#### 👨‍🏫 Шинэ Багш нэмэх")
+                    b_user = st.text_input("Багшийн Username", key="b_u").strip()
                     b_pass = st.text_input("Нууц үг", type="password", key="b_p").strip()
                     b_name = st.text_input("Багшийн бүтэн нэр", key="b_n").strip()
                     if st.button("Багш бүртгэх"):
@@ -192,8 +193,8 @@ else:
                                 st.rerun()
                 
                 with col_b:
-                    st.markdown("#### Шинэ Сурагч нэмэх")
-                    s_user = st.text_input("Сурагчийн Username", key="s_u").strip().lower()
+                    st.markdown("#### 🧑‍🎓 Шинэ Сурагч нэмэх")
+                    s_user = st.text_input("Сурагчийн Username", key="s_u").strip()
                     s_pass = st.text_input("Нууц үг", type="password", key="s_p").strip()
                     s_name = st.text_input("Сурагчийн нэр", key="s_n").strip()
                     s_cls = st.selectbox("Анги сонгох", st.session_state.classes if st.session_state.classes else ["Ангигүй"])
@@ -212,8 +213,9 @@ else:
                 for u_key, u_val in list(st.session_state.users.items()):
                     with st.container(border=True):
                         st.write(f"🎭 **{u_val['role']}** | Username: `{u_key}` | Нэр: **{u_val['name']}** | Анги: **{u_val.get('class', '-')}**")
-                        if u_key != 'admin' and u_key != user.get('username'):
-                            if st.button("🗑️ Устгах", key=f"del_u_{u_key}"):
+                        # Админ өөрөө өөрийгөө болон Үндсэн админыг устгах боломжгүй
+                        if u_key != 'batbilegt.ya' and u_key != user.get('username'):
+                            if st.button("🗑️ Хэрэглэгч устгах", key=f"del_u_{u_key}"):
                                 del st.session_state.users[u_key]
                                 save_json(USER_FILE, st.session_state.users)
                                 st.success("Хэрэглэгч устгагдлаа!")
