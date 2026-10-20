@@ -5,7 +5,7 @@ import os
 import random
 
 # Хуудасны тохиргоо
-st.set_page_config(page_title="GTIS Physics", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="GTIS Physics Физик", page_icon="⚡", layout="wide")
 
 VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
@@ -27,7 +27,7 @@ def load_users():
         with open(USER_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {
-        'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'Үндсэн Багш'},
+        'bagsh': {'password': '1234', 'role': 'Багш', 'name': 'Багш'},
         'suragch1': {'password': 'pass1', 'role': 'Сурагч', 'name': 'Сурагч 1'},
         'suragch2': {'password': 'pass2', 'role': 'Сурагч', 'name': 'Сурагч 2'}
     }
@@ -58,7 +58,7 @@ if "user" in params and not st.session_state.logged_in:
 
 # ---- НЭВТРЭХ ХЭСЭГ ----
 if not st.session_state.logged_in:
-    st.title("⚡ Физикийн нэр томьёоны ухаалаг систем")
+    st.title("⚡ Физикийн ухаалаг систем")
     st.subheader("Системд нэвтрэх")
     
     col1, col2 = st.columns([1, 2])
