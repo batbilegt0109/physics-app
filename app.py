@@ -200,6 +200,7 @@ else:
 
         with tab3:
             st.subheader("Файлаар олон үг оруулах")
+            st.info("Таны файлд 'category', 'en', 'mn', 'description' гэсэн баганууд байвал зохимжтой.")
             uploaded_file = st.file_uploader("Файлаа сонгох / чирж оруулах", type=['csv', 'xlsx'])
             
             if uploaded_file is not None:
@@ -215,6 +216,7 @@ else:
                         count = 0
                         for _, row in df.iterrows():
                             if 'en' in df.columns and 'mn' in df.columns:
+                                # Файлаас category авах, байхгүй бол "Бусад" гэж үзэх
                                 cat = str(row['category']) if 'category' in df.columns and pd.notna(row['category']) else "Бусад"
                                 desc = str(row['description']) if 'description' in df.columns and pd.notna(row['description']) else "-"
                                 st.session_state.vocab.append({
@@ -271,21 +273,21 @@ else:
             if len(vocab_list) < 4:
                 st.warning("Тест ажиллахад дор хаяж 4 үг шаардлагатай.")
             else:
-                if 'quiz_q' not in st.session_state:
-                    st.session_state.quiz_q = None
-                
-                if st.button("Шинэ асуулт авах") or st.session_state.quiz_q is None:
+                # Шинэ асуулт генератор функц
+                def generate_question():
                     correct_item = random.choice(vocab_list)
                     wrong_items = random.sample([v for v in vocab_list if v['en'] != correct_item['en']], min(3, len(vocab_list)-1))
                     options = [correct_item['mn']] + [w['mn'] for w in wrong_items]
                     random.shuffle(options)
-                    
-                    st.session_state.quiz_q = {
+                    return {
                         'en': correct_item['en'],
                         'correct': correct_item['mn'],
                         'options': options,
-                        'desc': correct_item['description']
+                        'desc': correct_item.get('description', '-')
                     }
+
+                if 'quiz_q' not in st.session_state or st.session_state.quiz_q is None:
+                    st.session_state.quiz_q = generate_question()
                 
                 q = st.session_state.quiz_q
                 st.markdown(f"### Англи үг: **{q['en']}**")
@@ -313,6 +315,10 @@ else:
                         "score": score
                     })
                     save_results(st.session_state.results_db)
+                    
+                    # Хариу шалгасны дараа дараагийн шинэ асуултыг автоматаар бэлдэх
+                    st.session_state.quiz_q = generate_question()
+                    st.rerun()
 
         with tab_s2:
             st.subheader("📖 Физикийн нэр томьёоны толь бичиг")
