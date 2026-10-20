@@ -247,7 +247,7 @@ else:
                 else:
                     st.warning("Бүх талбарыг бөглөнө үү.")
 
-with tab5:
+         with tab5:
             st.subheader("📈 Сурагчдын сорилтын нэгдсэн дүн")
             results = load_results()
             if not results:
