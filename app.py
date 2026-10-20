@@ -497,7 +497,9 @@ else:
                         st.success("Үр дүн амжилттай архивлав.")
 
     # --- СУРАГЧИЙН ЦЭС ---
-    elif menu_choice == "📝 Нэр томьёоны сорилт (10 тест)" or menu_choice == "📝 Нэр томьёоны сорилт":
+    
+    else:
+        if menu_choice == "📝 Нэр томьёоны сорилт (10 тест)" or menu_choice == "📝 Нэр томьёоны сорилт":
             st.subheader("📝 Нэр томьёоны сорилт")
             vocab_list = st.session_state.vocab
             
