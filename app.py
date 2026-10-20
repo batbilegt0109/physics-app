@@ -4,6 +4,7 @@ import json
 import os
 import random
 import io
+import uuid
 
 # Хуудасны тохиргоо
 st.set_page_config(page_title="GTIS Advanced Physics System", page_icon="⚡", layout="wide")
@@ -86,9 +87,9 @@ if not st.session_state.logged_in:
                     
     with tab_register:
         st.markdown("### Сурагч өөрөө бүртгүүлэх")
-        reg_user = st.text_input("Шинэ Username").strip()
-        reg_pass = st.text_input("Нууц үг", type="password").strip()
-        reg_name = st.text_input("Овог, нэр").strip()
+        reg_user = st.text_input("Шинэ Username", key="reg_u").strip()
+        reg_pass = st.text_input("Нууц үг", type="password", key="reg_p").strip()
+        reg_name = st.text_input("Овог, нэр", key="reg_n").strip()
         
         cls_options = st.session_state.classes if st.session_state.classes else ["Анги хараахан үүсээгүй"]
         reg_class = st.selectbox("Өөрийн анги / бүлгээ сонгоно уу:", cls_options)
@@ -201,7 +202,7 @@ else:
                     s_user = st.text_input("Сурагчийн Username", key="s_u").strip()
                     s_pass = st.text_input("Нууц үг", type="password", key="s_p").strip()
                     s_name = st.text_input("Сурагчийн нэр", key="s_n").strip()
-                    s_cls = st.selectbox("Анги сонгох", st.session_state.classes if st.session_state.classes else ["Ангигүй"])
+                    s_cls = st.selectbox("Анги сонгох", st.session_state.classes if st.session_state.classes else ["Ангигүй"], key="s_cls_box")
                     if st.button("Сурагч бүртгэх"):
                         if s_user and s_pass and s_name:
                             if s_user in st.session_state.users:
@@ -230,18 +231,20 @@ else:
             tab_v1, tab_v2 = st.tabs(["✏️ Үгс харах, Засах & Устгах", "📥 Файлаар & Гараар оруулах"])
             
             with tab_v1:
+                # Vocab хоосон үед Data Editor алдахаас сэргийлж хоосон 5 баганатай DataFrame үүсгэх
                 if not st.session_state.vocab:
-                    st.info("Үгсийн сан хоосон байна.")
+                    df_vocab = pd.DataFrame(columns=['category', 'sub_category', 'en', 'mn', 'description'])
                 else:
-                    st.markdown("💡 *Хүснэгт дээр шууд засна уу. Мөн мөр сонгоод Delete товчоор устгах боломжтой.*")
                     df_vocab = pd.DataFrame(st.session_state.vocab)
-                    edited_df = st.data_editor(df_vocab, use_container_width=True, num_rows="dynamic", key="vocab_editor")
-                    
-                    if st.button("💾 Өөрчлөлтийг хадгалах"):
-                        st.session_state.vocab = edited_df.to_dict(orient="records")
-                        save_json(VOCAB_FILE, st.session_state.vocab)
-                        st.success("Үгсийн сан амжилттай шинэчлэгдлээ!")
-                        st.rerun()
+                
+                st.markdown("💡 *Хүснэгт дээр шууд засна уу. Мөн мөр сонгоод Delete товчоор устгах боломжтой.*")
+                edited_df = st.data_editor(df_vocab, use_container_width=True, num_rows="dynamic", key="vocab_editor")
+                
+                if st.button("💾 Өөрчлөлтийг хадгалах"):
+                    st.session_state.vocab = edited_df.to_dict(orient="records")
+                    save_json(VOCAB_FILE, st.session_state.vocab)
+                    st.success("Үгсийн сан амжилттай шинэчлэгдлээ!")
+                    st.rerun()
 
             with tab_v2:
                 col_i1, col_i2 = st.columns(2)
@@ -251,6 +254,8 @@ else:
                     if up_file:
                         try:
                             df_import = pd.read_csv(up_file) if up_file.name.endswith('.csv') else pd.read_excel(up_file)
+                            # Баганын нэрсийг жижиг болгож цэвэрлэх
+                            df_import.columns = [str(c).strip().lower() for c in df_import.columns]
                             req_cols = ['category', 'sub_category', 'en', 'mn', 'description']
                             if not all(c in df_import.columns for c in req_cols):
                                 st.error("Файлд category, sub_category, en, mn, description гэсэн 5 багана заавал байх ёстой!")
@@ -270,11 +275,11 @@ else:
                 
                 with col_i2:
                     st.markdown("#### Гараар нэг үг нэмэх")
-                    c_cat = st.text_input("Бүлэг сэдэв").strip()
-                    c_sub = st.text_input("Дэд сэдэв").strip()
-                    c_en = st.text_input("Англи термин").strip()
-                    c_mn = st.text_input("Монгол утга").strip()
-                    c_desc = st.text_area("Тайлбар").strip()
+                    c_cat = st.text_input("Бүлэг сэдэв", key="c_cat_input").strip()
+                    c_sub = st.text_input("Дэд сэдэв", key="c_sub_input").strip()
+                    c_en = st.text_input("Англи термин", key="c_en_input").strip()
+                    c_mn = st.text_input("Монгол утга", key="c_mn_input").strip()
+                    c_desc = st.text_area("Тайлбар", key="c_desc_input").strip()
                     if st.button("Үг нэмэх"):
                         if c_cat and c_sub and c_en and c_mn:
                             st.session_state.vocab.append({
@@ -288,8 +293,8 @@ else:
             st.subheader("📚 Гэрийн даалгавар өгөх (Бүлэг, дэд сэдвээр)")
             
             hw_title = st.text_input("Даалгаврын гарчиг")
-            hw_cat = st.text_input("Бүлэг сэдэв")
-            hw_sub = st.text_input("Дэд сэдэв")
+            hw_cat = st.text_input("Бүлэг сэдэв", key="hw_cat_inp")
+            hw_sub = st.text_input("Дэд сэдэв", key="hw_sub_inp")
             target_cls = st.selectbox("Аль ангид өгөх вэ?", ["Бүгд"] + st.session_state.classes)
             deadline = st.date_input("Дуусах хугацаа")
             
@@ -306,7 +311,7 @@ else:
             if st.button("🚀 Даалгавар нийтлэх"):
                 if hw_title and hw_cat:
                     st.session_state.homeworks.append({
-                        "id": str(random.randint(1000, 9999)),
+                        "id": str(uuid.uuid4())[:8],
                         "title": hw_title,
                         "category": hw_cat,
                         "sub_category": hw_sub,
@@ -321,8 +326,8 @@ else:
         elif menu_choice == "📝 Шалгалт удирдах (Гараар/Файлаар)":
             st.subheader("📝 Шалгалт үүсгэх ба удирдах")
             ex_title = st.text_input("Шалгалтын нэр")
-            ex_cat = st.text_input("Бүлэг сэдэв")
-            ex_sub = st.text_input("Дэд сэдэв")
+            ex_cat = st.text_input("Бүлэг сэдэв", key="ex_cat_inp")
+            ex_sub = st.text_input("Дэд сэдэв", key="ex_sub_inp")
             ex_desc = st.text_area("Шалгалтын заавар")
             
             ex_tab1, ex_tab2 = st.tabs(["✍️ Асуултуудыг гараар нэмэх", "📁 Файлаар асуулт импортлох"])
@@ -332,7 +337,10 @@ else:
                 
             with ex_tab1:
                 q = st.text_input("Асуулт")
-                o1, o2, o3, o4 = st.text_input("A хувилбар"), st.text_input("B хувилбар"), st.text_input("C хувилбар"), st.text_input("D хувилбар")
+                o1 = st.text_input("A хувилбар")
+                o2 = st.text_input("B хувилбар")
+                o3 = st.text_input("C хувилбар")
+                o4 = st.text_input("D хувилбар")
                 correct = st.selectbox("Зөв хариулт", [o1, o2, o3, o4] if o1 else ["-"])
                 if st.button("Асуулт нэмэх"):
                     if q and correct != "-":
@@ -347,6 +355,7 @@ else:
                 if ex_file:
                     try:
                         df_ex = pd.read_csv(ex_file) if ex_file.name.endswith('.csv') else pd.read_excel(ex_file)
+                        df_ex.columns = [str(c).strip().lower() for c in df_ex.columns]
                         if st.button("📥 Файлаас асуултуудыг ачаалах"):
                             for _, r in df_ex.iterrows():
                                 st.session_state.temp_q.append({
@@ -361,7 +370,7 @@ else:
             if st.session_state.temp_q and st.button("🚀 Шалгалтыг бүхлээр нь нийтлэх"):
                 if ex_title:
                     st.session_state.exams.append({
-                        "id": str(random.randint(1000, 9999)),
+                        "id": str(uuid.uuid4())[:8],
                         "title": ex_title,
                         "category": ex_cat,
                         "sub_category": ex_sub,
@@ -402,7 +411,7 @@ else:
                         })
                     
                     st.session_state.exams.append({
-                        "id": str(random.randint(1000, 9999)),
+                        "id": str(uuid.uuid4())[:8],
                         "title": ai_title,
                         "category": chosen_sub,
                         "sub_category": chosen_sub,
@@ -413,7 +422,7 @@ else:
                     st.success("🤖 AI тест амжилттай үүсэж, шалгалтын жагсаалтад нэмэгдлээ!")
 
         elif menu_choice == "📊 Дүн анализ, Архив & Excel":
-            st.subheader("📊 Дүн шинжилгээ, Үр дүн & Архиवलाлт")
+            st.subheader("📊 Дүн шинжилгээ, Үр дүн & Архивлалт")
             
             hw_res = load_json(HW_RESULT_FILE, {})
             if not hw_res:
