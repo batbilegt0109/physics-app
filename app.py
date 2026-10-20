@@ -36,7 +36,6 @@ if 'vocab' not in st.session_state:
     st.session_state.vocab = load_json(VOCAB_FILE, [])
 
 if 'users' not in st.session_state:
-    # Анхдагч Багш/Админ аккаунт
     st.session_state.users = load_json(USER_FILE, {
         'admin': {'password': '123', 'role': 'Багш', 'name': 'Админ Багш', 'class': 'Бүгд'}
     })
@@ -50,7 +49,7 @@ if 'exams' not in st.session_state:
 if 'homeworks' not in st.session_state:
     st.session_state.homeworks = load_json(HOMEWORK_FILE, [])
 
-# Рефреш хийхэд нэвтрэлт арилахгүй байх лог
+# Рефреш хийхэд нэвтрэлт арилахгүй байх логик
 saved_session = load_json(SESSION_FILE, None)
 if 'logged_in' not in st.session_state:
     if saved_session and saved_session.get('username') in st.session_state.users:
@@ -117,7 +116,6 @@ else:
     
     with st.sidebar:
         st.title("⚡ Физикийн систем")
-        # Нэвтэрсэн хүний яг өөрийн нэр харагдана
         st.success(f"👤 **{user['name']}**\n\nЭрх: **{user['role']}**\nАнги: **{user.get('class', '-')}**")
         
         if user['role'] == 'Багш':
@@ -181,7 +179,7 @@ else:
                             st.rerun()
 
         elif menu_choice == "👥 Багш & Сурагчдын бүртгэл удирдах":
-            st.subheader("👥 Хэрэглэгчдийн бүртгэл болон Нууц үг / Нэр засах")
+            st.subheader("👥 Хэрэглэгчдийн бүртгэл болон Username, Нэр, Нууц үг засах")
             
             t_user1, t_user2 = st.tabs(["➕ Шинэ Багш / Сурагч нэмэх", "⚙️ Бүртгэлтэй хэрэглэгчдийг засах"])
             
@@ -194,10 +192,13 @@ else:
                     b_name = st.text_input("Багшийн бүтэн нэр", key="b_n").strip()
                     if st.button("Багш нэмэх"):
                         if b_user and b_pass and b_name:
-                            st.session_state.users[b_user] = {'password': b_pass, 'role': 'Багш', 'name': b_name, 'class': 'Бүгд'}
-                            save_json(USER_FILE, st.session_state.users)
-                            st.success(f"Багш '{b_name}' амжилттай нэмэгдлээ!")
-                            st.rerun()
+                            if b_user in st.session_state.users:
+                                st.error("Энэ username аль хэдийн бүртгэгдсэн байна!")
+                            else:
+                                st.session_state.users[b_user] = {'password': b_pass, 'role': 'Багш', 'name': b_name, 'class': 'Бүгд'}
+                                save_json(USER_FILE, st.session_state.users)
+                                st.success(f"Багш '{b_name}' амжилттай нэмэгдлээ!")
+                                st.rerun()
                 
                 with col_b:
                     st.markdown("#### 🧑‍🎓 Шинэ Сурагч нэмэх")
@@ -207,38 +208,54 @@ else:
                     s_cls = st.selectbox("Анги сонгох", st.session_state.classes if st.session_state.classes else ["Ангигүй"])
                     if st.button("Сурагч нэмэх"):
                         if s_user and s_pass and s_name:
-                            st.session_state.users[s_user] = {'password': s_pass, 'role': 'Сурагч', 'name': s_name, 'class': s_cls}
-                            save_json(USER_FILE, st.session_state.users)
-                            st.success(f"Сурагч '{s_name}' амжилттай нэмэгдлээ!")
-                            st.rerun()
+                            if s_user in st.session_state.users:
+                                st.error("Энэ username аль хэдийн бүртгэгдсэн байна!")
+                            else:
+                                st.session_state.users[s_user] = {'password': s_pass, 'role': 'Сурагч', 'name': s_name, 'class': s_cls}
+                                save_json(USER_FILE, st.session_state.users)
+                                st.success(f"Сурагч '{s_name}' амжилттай нэмэгдлээ!")
+                                st.rerun()
 
             with t_user2:
-                st.markdown("#### Бүртгэлтэй хэрэглэгчдийн мэдээлэл засах")
+                st.markdown("#### Бүртгэлтэй хэрэглэгчдийн мэдээлэл засах (Username, Нэр, Нууц үг)")
                 for u_key, u_val in list(st.session_state.users.items()):
                     with st.container(border=True):
-                        st.write(f"🎭 **{u_val['role']}** | Username: `{u_key}` | Одоогийн нэр: **{u_val['name']}**")
-                        c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+                        st.write(f"🎭 **{u_val['role']}** | Одоогийн Username: `{u_key}` | Нэр: **{u_val['name']}**")
+                        c1, c2, c3, c4 = st.columns([2, 2, 2, 1])
                         with c1:
-                            edit_name = st.text_input("Шинэ нэр", value=u_val['name'], key=f"en_{u_key}")
+                            new_username = st.text_input("Username засах", value=u_key, key=f"eu_{u_key}").strip().lower()
                         with c2:
-                            edit_pass = st.text_input("Шинэ нууц үг", type="password", placeholder="Солих бол бичнэ үү", key=f"ep_{u_key}")
+                            edit_name = st.text_input("Шинэ нэр", value=u_val['name'], key=f"en_{u_key}")
                         with c3:
-                            st.write("")
-                            st.write("")
+                            edit_pass = st.text_input("Шинэ нууц үг", type="password", placeholder="Солих бол бичнэ үү", key=f"ep_{u_key}")
+                        
+                        col_btn1, col_btn2 = st.columns([1, 1])
+                        with col_btn1:
                             if st.button("💾 Хадгалах", key=f"save_{u_key}"):
+                                if new_username and new_username != u_key:
+                                    if new_username in st.session_state.users:
+                                        st.error("Энэ username аль хэдийн бүртгэгдсэн байна!")
+                                    else:
+                                        # Шинэ username руу өгөгдлийг шилжүүлж хуучин key-г устгах
+                                        st.session_state.users[new_username] = st.session_state.users[u_key]
+                                        del st.session_state.users[u_key]
+                                        u_key = new_username
+                                
                                 st.session_state.users[u_key]['name'] = edit_name
                                 if edit_pass:
                                     st.session_state.users[u_key]['password'] = edit_pass
                                 save_json(USER_FILE, st.session_state.users)
-                                st.success("Шинэчлэгдлээ!")
+                                st.success("Мэдээлэл шинэчлэгдлээ!")
                                 st.rerun()
-                        with c4:
-                            st.write("")
-                            st.write("")
+                        with col_btn2:
                             if st.button("🗑️ Устгах", key=f"del_{u_key}"):
-                                del st.session_state.users[u_key]
-                                save_json(USER_FILE, st.session_state.users)
-                                st.rerun()
+                                if len(st.session_state.users) <= 1:
+                                    st.warning("Хамгийн сүүлийн хэрэглэгчийг устгах боломжгүй.")
+                                else:
+                                    del st.session_state.users[u_key]
+                                    save_json(USER_FILE, st.session_state.users)
+                                    st.success("Хэрэглэгч устгагдлаа!")
+                                    st.rerun()
 
         elif menu_choice == "➕ Үгсийн сан (5 баганатай импорт)":
             st.subheader("📚 Үгсийн сан удирдах (Гаднаас 5 баганаар оруулах)")
@@ -254,7 +271,6 @@ else:
                         df_import = pd.read_csv(up_file) if up_file.name.endswith('.csv') else pd.read_excel(up_file)
                         req_cols = ['category', 'sub_category', 'en', 'mn', 'description']
                         
-                        # Баганы нэрс туршиж шалгах
                         missing_cols = [c for c in req_cols if c not in df_import.columns]
                         if missing_cols:
                             st.error(f"Файлд шаардлагатай дараах баганууд байхгүй байна: {missing_cols}")
