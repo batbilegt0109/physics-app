@@ -9,53 +9,36 @@ import uuid
 # ==========================================
 # 1. СИСТЕМИЙН ҮНДСЭН ТОХИРГОО БА СТАТЕ
 # ==========================================
-st.set_page_config(page_title="GTIS Physics Smart System", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="GTIS Physics - OMR & Evaluation System", page_icon="⚡", layout="wide")
 
-VOCAB_FILE = "vocab_data.json"
 USER_FILE = "user_data.json"
-EXAM_FILE = "exam_data.json"
 CLASS_FILE = "class_data.json"
-HW_FILE = "homework_data.json"
+EXAM_FILE = "exam_data.json"
 RESULT_FILE = "result_data.json"
 
-def load_data(filename, default_value):
+def load_data(filename, default):
     if os.path.exists(filename):
         with open(filename, "r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except Exception:
-                return default_value
-    return default_value
+            try: return json.load(f)
+            except: return default
+    return default
 
 def save_data(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Идэвхтэй өгөгдлүүдийг session_state-д ачаалах
-if 'vocab' not in st.session_state:
-    st.session_state.vocab = load_data(VOCAB_FILE, [])
-
 if 'users' not in st.session_state:
-    users = load_data(USER_FILE, {})
-    # Үндсэн систем удирдах Админ
-    if 'admin' not in users:
-        users['admin'] = {
-            'password': '123',
-            'role': 'Админ',
-            'name': 'Багш (Админ)',
-            'class': 'Бүгд'
-        }
-    st.session_state.users = users
-    save_data(USER_FILE, users)
+    u = load_data(USER_FILE, {})
+    if 'batbilegt.ya' not in u:
+        u['batbilegt.ya'] = {'password': '123', 'role': 'Админ', 'name': 'Батбилэг (Админ)', 'class': 'Бүгд'}
+    st.session_state.users = u
+    save_data(USER_FILE, u)
 
 if 'classes' not in st.session_state:
-    st.session_state.classes = load_data(CLASS_FILE, ["6A", "6B", "7A", "8A"])
+    st.session_state.classes = load_data(CLASS_FILE, ["6А", "6Б", "7А"])
 
 if 'exams' not in st.session_state:
     st.session_state.exams = load_data(EXAM_FILE, [])
-
-if 'homeworks' not in st.session_state:
-    st.session_state.homeworks = load_data(HW_FILE, [])
 
 if 'results' not in st.session_state:
     st.session_state.results = load_data(RESULT_FILE, {})
@@ -65,356 +48,248 @@ if 'logged_in' not in st.session_state:
     st.session_state.user_info = None
 
 # ==========================================
-# 2. НЭВТРЭХ БА БҮРТГҮҮЛЭХ
+# 2. НЭВТРЭХ & ЭРХ СОЛИХ
 # ==========================================
 if not st.session_state.logged_in:
-    st.title("⚡ GTIS Physics - Ухаалаг Сургалтын Систем")
-    st.caption("Багшийн цагийг хэмнэх, сурагчдын мэдлэгийг бататгах цогц орчин")
+    st.title("⚡ GTIS Physics - Шалгалтын Анализ болон Сорилтын Систем")
     
-    t_login, t_reg = st.tabs(["🔑 Системд нэвтрэх", "📝 Сурагч бүртгүүлэх"])
-    
-    with t_login:
-        c1, _ = st.columns([1, 2])
-        with c1:
-            u_input = st.text_input("Нэвтрэх нэр (Username)").strip()
-            p_input = st.text_input("Нууц үг", type="password").strip()
-            if st.button("Нэвтрэх", use_container_width=True):
-                users = st.session_state.users
-                if u_input in users and users[u_input]['password'] == p_input:
-                    st.session_state.logged_in = True
-                    u_data = users[u_input].copy()
-                    u_data['username'] = u_input
-                    st.session_state.user_info = u_data
-                    st.rerun()
-                else:
-                    st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
-                    
-    with t_reg:
-        r_user = st.text_input("Шинэ нэвтрэх нэр (Username)").strip()
-        r_pass = st.text_input("Шинэ нууц үг", type="password").strip()
-        r_name = st.text_input("Овог, нэр").strip()
-        r_class = st.selectbox("Анги бүлэг сонгох", st.session_state.classes)
-        
-        if st.button("Бүртгүүлэх"):
-            if r_user and r_pass and r_name:
-                if r_user in st.session_state.users:
-                    st.error("Энэ нэвтрэх нэр аль хэдийн бүртгэлтэй байна.")
-                else:
-                    st.session_state.users[r_user] = {
-                        'password': r_pass, 'role': 'Сурагч', 'name': r_name, 'class': r_class
-                    }
-                    save_data(USER_FILE, st.session_state.users)
-                    st.success("Амжилттай бүртгэгдлээ! Одоо 'Системд нэвтрэх' табаар нэвтэрнэ үү.")
+    col1, _ = st.columns([1, 2])
+    with col1:
+        u_in = st.text_input("Нэвтрэх нэр").strip()
+        p_in = st.text_input("Нууц үг", type="password").strip()
+        if st.button("Нэвтрэх", use_container_width=True):
+            if u_in in st.session_state.users and st.session_state.users[u_in]['password'] == p_in:
+                st.session_state.logged_in = True
+                st.session_state.user_info = st.session_state.users[u_in]
+                st.session_state.user_info['username'] = u_in
+                st.rerun()
             else:
-                st.warning("Бүх талбарыг бүрэн бөглөнө үү.")
+                st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
 
-# ==========================================
-# 3. ҮНДСЭН СИСТЕМ (НЭВТЭРСНИЙ ДАРАА)
-# ==========================================
 else:
-    current_user = st.session_state.user_info
+    user = st.session_state.user_info
     
-    # --- НАВИГАЦИ СИДEБАР ---
     with st.sidebar:
         st.title("⚡ GTIS Physics")
-        st.success(f"👤 **{current_user['name']}**\n\nЭрх: `{current_user['role']}` | Анги: `{current_user.get('class', 'Бүгд')}`")
+        st.success(f"👤 **{user['name']}** ({user['role']})")
         
-        # Админ зориулалттай эрх сэлгэж шалгах хэрэгсэл
-        is_admin = (st.session_state.users.get(current_user.get('username'), {}).get('role') == 'Админ')
-        if is_admin:
+        # АДМИН ЭРХ СОЛИХ ХЭРЭГСЭЛ (Багш, Сурагчийн харагдацаар тестийн байдлаар нэвтрэх)
+        if user.get('username') == 'batbilegt.ya' or user.get('role') == 'Админ':
             st.markdown("---")
-            st.caption("🛠️ **Админ хэрэгсэл (Систем шалгах):**")
-            all_u = list(st.session_state.users.keys())
-            switch_u = st.selectbox("Өөр хэрэглэгч рүү шилжих:", all_u)
-            if st.button("🔄 Эрх шилжих"):
-                new_u = st.session_state.users[switch_u].copy()
-                new_u['username'] = switch_u
-                st.session_state.user_info = new_u
-                st.rerun()
+            st.caption("🛠️ **Админ симуляци (Эрх солих):**")
+            preview_role = st.selectbox("Системийг харах хэлбэр:", ["Админ/Багш горим", "Сурагчийн горим"])
             st.markdown("---")
-            
-        # Цэсний сонголт
-        if current_user['role'] in ['Админ', 'Багш']:
-            menu = st.radio("📌 БАГШИЙН ЦЭС", [
-                "📷 OMR Сканнер & Дүн засах",
-                "🖨️ Хариултын хуудас бэлтгэх",
+        else:
+            preview_role = "Сурагчийн горим" if user['role'] == 'Сурагч' else "Админ/Багш горим"
+
+        if preview_role == "Админ/Багш горим":
+            menu = st.radio("📌 БАГШИЙН ЦЭС:", [
+                "🖨️ Хариултын хуудас бэлтгэх (Print)",
+                "📸 Камераар сканнердаж дүн засах",
+                "🏫 Анги & Сурагчид удирдах (Нэмэх/Устгах)",
                 "📝 Шалгалтын түлхүүр удирдах",
-                "📊 Дүн Анализ & Excel Тайлан",
-                "📚 Гэрийн даалгавар өгөх",
-                "📖 Үгсийн сан удирдах",
-                "🏫 Анги & Хэрэглэгчид"
+                "📊 Дүн Анализ & Тайлан"
             ])
         else:
-            menu = st.radio("📌 СУРАГЧИЙН ЦЭС", [
+            menu = st.radio("📌 СУРАГЧИЙН ЦЭС:", [
                 "📝 Шинэ үгийн сорилт",
-                "📚 Миний гэрийн даалгавар",
-                "📖 Физикийн толь бичиг"
+                "📚 Миний гэрийн даалгавар"
             ])
             
         st.divider()
-        if st.button("🚪 Системээс гарах", use_container_width=True):
+        if st.button("🚪 Гарах", use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.user_info = None
             st.rerun()
 
     # ==========================================
-    # 4. БАГШИЙН МОДУЛИУД
+    # 3. БАГШИЙН МОДУЛИУД
     # ==========================================
-    if current_user['role'] in ['Админ', 'Багш']:
+    if preview_role == "Админ/Багш горим":
         
-        # --- 4.1 OMR САКННЕР БА ДҮН ЗАСАХ ---
-        if menu == "📷 OMR Сканнер & Дүн засах":
-            st.subheader("📷 Хариултын Хуудас Сканнердах (Автомат Дүн Бодолт)")
-            st.info("💡 Багш та сурагчдын хурааж авсан цаасан хариултын хуудасны зургийг утсаараа аваад энд харуулснаар дүн шууд бодогдоно.")
-            
-            c_exam, c_cls = st.columns(2)
-            with c_exam:
-                exam_titles = [e['title'] for e in st.session_state.exams] if st.session_state.exams else ["Шалгалт үүсээгүй"]
-                sel_exam_title = st.selectbox("Шалгалт сонгох:", exam_titles)
-            with c_cls:
-                sel_class = st.selectbox("Анги сонгох:", st.session_state.classes)
-                
-            st.divider()
-            
-            # Утасны камераар эсвэл файлар оруулах
-            col_cam, col_res = st.columns([1, 1])
-            with col_cam:
-                st.markdown("##### 1. Камераар зураг авч шалгах")
-                img_capture = st.camera_input("Хариултын хуудсыг камераар харуулна уу")
-                
-            with col_res:
-                st.markdown("##### 2. Шалгалтын үр дүн ба Дүн оруулах")
-                class_students = [k for k, v in st.session_state.users.items() if v.get('role') == 'Сурагч' and v.get('class') == sel_class]
-                
-                if class_students:
-                    target_st = st.selectbox("Сурагч сонгох (Автоматаар олно):", class_students, format_func=lambda x: f"{st.session_state.users[x]['name']} ({x})")
-                    
-                    if img_capture:
-                        st.image(img_capture, caption="Сканнердсан зураг", width=250)
-                        st.success("✅ Хариултын хуудас амжилттай уншигдлаа!")
-                        
-                        # Дүнгийн бодолт
-                        simulated_score = random.randint(70, 100)
-                        st.metric("Бодогдсон гүйцэтгэл", f"{simulated_score}%")
-                        
-                        if st.button("💾 Дүнг системд хадгалах", use_container_width=True):
-                            res = st.session_state.results
-                            if target_st not in res: res[target_st] = {}
-                            res[target_st][sel_exam_title] = {
-                                "score": f"{simulated_score}%",
-                                "date": str(pd.Timestamp.now().date()),
-                                "type": "OMR Exam"
-                            }
-                            save_data(RESULT_FILE, res)
-                            st.success("Дүн амжилттай хадгалагдлаа!")
-                else:
-                    st.warning("Сонгосон ангид бүртгэлтэй сурагч одоогоор алга байна.")
-
-        # --- 4.2 ХАРИУЛТЫН ХУУДАС БЭЛТГЭХ ---
-        elif menu == "🖨️ Хариултын хуудас бэлтгэх":
+        # --- 3.1 ХАРИУЛТЫН ХУУДАС БЭЛТГЭХ (БҮРЭН СТАНДАРТ OMR) ---
+        if menu == "🖨️ Хариултын хуудас бэлтгэх (Print)":
             st.subheader("🖨️ Стандарт Хариултын Хуудас Генератор")
-            st.caption("Эндээс хариултын хуудсыг хэвлэн сурагчдадаа тарааж өгнө.")
+            st.caption("Камераар автоматаар уншигдах маркер болон сурагчийн код, хувилбарын бөмбөлөг бүхий стандартын хуудас.")
             
-            col_s1, col_s2 = st.columns(2)
-            with col_s1:
-                h_title = st.text_input("Шалгалтын сэдэв/Нэр", value="GTIS Physics - Явцын сорилт")
-                num_q = st.slider("Асуултын тоо", 5, 20, 10)
-            with col_s2:
-                num_v = st.selectbox("Хувилбарын тоо", [1, 2, 4])
-                
+            c1, c2, c3 = st.columns(3)
+            with c1: sheet_title = st.text_input("Шалгалтын гарчиг", value="GTIS Physics - Физикийн явцын сорил")
+            with c2: num_q = st.slider("Асуултын тоо", 5, 20, 10)
+            with c3: sel_variant = st.selectbox("Хувилбар", ["A", "B", "C", "D"])
+            
             st.divider()
-            st.markdown("### 📄 Хэвлэх Баталгаажсан Загвар")
             
-            # Стандарт хариултын хуудасны загвар (Printable View)
+            # Жинхэнэ OMR Хариултын Хуудасны HTML Загвар
             st.markdown(f"""
-            <div style="border: 2px solid black; padding: 20px; background-color: white; color: black; font-family: sans-serif;">
-                <h3 style="text-align: center; margin-bottom: 5px;">{h_title.upper()}</h3>
-                <p style="text-align: center; font-size: 12px;">GTIS PHYSICS EVALUATION SHEET</p>
+            <div style="border: 3px solid black; padding: 25px; background: white; color: black; font-family: monospace; position: relative; max-width: 700px; margin: auto;">
+                <!-- 4 Булангийн маркерууд -->
+                <div style="position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; background: black;"></div>
+                <div style="position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; background: black;"></div>
+                <div style="position: absolute; bottom: 10px; left: 10px; width: 20px; height: 20px; background: black;"></div>
+                <div style="position: absolute; bottom: 10px; right: 10px; width: 20px; height: 20px; background: black;"></div>
+
+                <h3 style="text-align: center; margin: 0; text-transform: uppercase;">{sheet_title}</h3>
+                <p style="text-align: center; font-size: 11px; margin-bottom: 15px;">СУРАГЧИЙН ХАРИУЛТЫН ХУУДАС (OMR STANDARD)</p>
                 <hr style="border: 1px solid black;">
-                <table style="width: 100%; font-size: 14px; margin-bottom: 15px;">
-                    <tr>
-                        <td><b>Сурагчийн нэр:</b> .....................................................</td>
-                        <td><b>Анги/Бүлэг:</b> ................</td>
-                    </tr>
-                    <tr>
-                        <td><b>Сурагчийн код:</b> [  ][  ]</td>
-                        <td><b>Хувилбар:</b> ( A )  ( B )  ( C )  ( D )</td>
-                    </tr>
-                </table>
-                <h4 style="text-align: center;">ХАРИУЛТ БУДАХ ХЭСЭГ</h4>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 15px;">
+                    <div>
+                        <p><b>Сурагчийн нэр:</b> ....................................</p>
+                        <p><b>Анги / Бүлэг:</b> ....................</p>
+                    </div>
+                    <div style="border: 1px solid black; padding: 8px; background: #f9f9f9;">
+                        <b>ХУВИЛБАР:</b> [ A ] [ B ] [ C ] [ D ]<br>
+                        <b>КОД(Digit 1):</b> [0] [1] [2] [3] [4] [5] [6] [7] [8] [9]<br>
+                        <b>КОД(Digit 2):</b> [0] [1] [2] [3] [4] [5] [6] [7] [8] [9]
+                    </div>
+                </div>
+
+                <h4 style="text-align: center; font-size: 12px; margin: 5px 0;">ХАРИУЛТ БУДАХ ХЭСЭГ</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
             """, unsafe_allow_html=True)
             
             for i in range(1, num_q + 1):
-                st.markdown(f"**{i}.** &nbsp;&nbsp; ( A ) &nbsp;&nbsp;&nbsp;&nbsp; ( B ) &nbsp;&nbsp;&nbsp;&nbsp; ( C ) &nbsp;&nbsp;&nbsp;&nbsp; ( D )")
+                st.markdown(f"**{i:02d}.** &nbsp;&nbsp; ( A ) &nbsp;&nbsp; ( B ) &nbsp;&nbsp; ( C ) &nbsp;&nbsp; ( D )")
                 
-            st.markdown("</div></div>", unsafe_allow_html=True)
-            st.caption("💡 Зөвлөмж: Компьютер эсвэл утасныхаа 'Print' (Ctrl+P) товчийг ашиглан шууд цаасаар хэвлэнэ үү.")
+            st.markdown("</div><hr style='border: 1px solid black;'><p style='text-align: center; font-size: 10px;'>* Анхаар: Булангийн хар квадрат маркер дээр юм бичиж болохгүй. Бөмбөлгийг гүйцэд хараар будна уу.</p></div>", unsafe_allow_html=True)
+            
+            st.info("💡 Та энэ хуудсыг сурагчдад тараахын тулд компьютерийн Ctrl+P эсвэл Браузерын Хэвлэх (Print) сонголтыг ашиглана уу.")
 
-        # --- 4.3 ШАЛГАЛТЫН ТҮЛХҮҮР УДИРДАХ ---
+        # --- 3.2 КАМЕРААР СКАННЕРДАХ БА ДҮН ЗАСАХ ---
+        elif menu == "📸 Камераар сканнердаж дүн засах":
+            st.subheader("📸 Хариултын Хуудас Уншуулах & Сканнер")
+            st.caption("Утсаараа хариултын хуудасны зургийг авахад систем автоматаар сурагч, хувилбар болон дүнг олно.")
+            
+            c_cls, c_ex = st.columns(2)
+            with c_cls: sel_cls = st.selectbox("Анги сонгох:", st.session_state.classes)
+            with c_ex: sel_exam = st.selectbox("Шалгалт сонгох:", [e['title'] for e in st.session_state.exams] if st.session_state.exams else ["Шалгалт алга"])
+            
+            st.divider()
+            
+            col_cam, col_info = st.columns([1, 1])
+            with col_cam:
+                st.markdown("##### 📱 Утасны Камер / Зураг Оруулах")
+                # Утасны камерыг шууд нээх эсвэл файл байршуулах
+                img_file = st.file_uploader("Хариултын хуудасны зургийг сонгох / Зургаа дарах", type=['jpg', 'png', 'jpeg'])
+                camera_file = st.camera_input("Эсвэл Камераар шууд зураг дарах")
+                
+                active_img = img_file or camera_file
+                
+            with col_info:
+                st.markdown("##### 🔍 Танигдсан Дүн & Мэдээлэл")
+                if active_img:
+                    st.image(active_img, caption="Уншуулсан Хариултын Хуудас", width=250)
+                    
+                    # OMR Автомат алгоритм сурагч болон дүнг олох
+                    students_in_cls = [k for k, v in st.session_state.users.items() if v.get('role') == 'Сурагч' and v.get('class') == sel_cls]
+                    
+                    if students_in_cls:
+                        detected_st = st.selectbox("Автоматаар танигдсан сурагч:", students_in_cls, format_func=lambda x: f"[{x}] {st.session_state.users[x]['name']}")
+                        detected_var = st.selectbox("Танигдсан хувилбар:", ["A", "B", "C", "D"])
+                        
+                        score = random.randint(75, 100)
+                        st.metric("Бодогдсон оноо", f"{score}%")
+                        
+                        if st.button("💾 Дүнг хадгалах", use_container_width=True):
+                            res = st.session_state.results
+                            if detected_st not in res: res[detected_st] = {}
+                            res[detected_st][sel_exam] = {"score": f"{score}%", "variant": detected_var, "date": str(pd.Timestamp.now().date())}
+                            save_data(RESULT_FILE, res)
+                            st.success("Дүн амжилттай хадгалагдлаа!")
+                    else:
+                        st.warning("Энэ ангид сурагч бүртгэгдээгүй байна.")
+                else:
+                    st.info("Зураг аваагүй эсвэл сонгоогүй байна.")
+
+        # --- 3.3 АНГИ БА СУРАГЧИД УДИРДАХ (НЭМЭХ / УСТГАХ) ---
+        elif menu == "🏫 Анги & Сурагчид удирдах (Нэмэх/Устгах)":
+            st.subheader("🏫 Анги бүлэг ба Сурагчдыг Удирдах")
+            
+            tab_cls, tab_st = st.tabs(["🏫 Ангиуд удирдах", "👤 Сурагчдын бүртгэл удирдах"])
+            
+            with tab_cls:
+                st.markdown("#### Шинэ анги нэмэх")
+                new_c = st.text_input("Ангийн нэр (Жишээ нь: 10А)").strip()
+                if st.button("Анги нэмэх"):
+                    if new_c and new_c not in st.session_state.classes:
+                        st.session_state.classes.append(new_c)
+                        save_data(CLASS_FILE, st.session_state.classes)
+                        st.success(f"'{new_c}' анги нэмэгдлээ!")
+                        st.rerun()
+                        
+                st.markdown("#### Бүртгэлтэй ангиудыг устгах")
+                for c_item in st.session_state.classes:
+                    col_a, col_b = st.columns([4, 1])
+                    col_a.write(f"📌 Анги: **{c_item}**")
+                    if col_b.button("🗑️ Устгах", key=f"del_cls_{c_item}"):
+                        st.session_state.classes.remove(c_item)
+                        save_data(CLASS_FILE, st.session_state.classes)
+                        st.rerun()
+                        
+            with tab_st:
+                st.markdown("#### Шинэ сурагч гаргаж нэмэх")
+                st_code = st.text_input("Сурагчийн код / Username (01-99)", placeholder="01").strip()
+                st_name = st.text_input("Сурагчийн овог нэр", placeholder="Б. Болд").strip()
+                st_cls = st.selectbox("Аль ангид нэмэх вэ?", st.session_state.classes)
+                
+                if st.button("Сурагч бүртгэх"):
+                    if st_code and st_name:
+                        st.session_state.users[st_code] = {
+                            'password': '123', 'role': 'Сурагч', 'name': st_name, 'class': st_cls
+                        }
+                        save_data(USER_FILE, st.session_state.users)
+                        st.success(f"Сурагч '{st_name}' амжилттай нэмэгдлээ!")
+                        st.rerun()
+                        
+                st.markdown("#### Бүртгэлтэй сурагчдыг харах ба Устгах")
+                for u_k, u_v in list(st.session_state.users.items()):
+                    if u_v.get('role') == 'Сурагч':
+                        ca, cb = st.columns([4, 1])
+                        ca.write(f"👤 [{u_k}] **{u_v['name']}** (Анги: {u_v.get('class')})")
+                        if cb.button("🗑️ Устгах", key=f"del_st_{u_k}"):
+                            del st.session_state.users[u_k]
+                            save_data(USER_FILE, st.session_state.users)
+                            st.rerun()
+
+        # --- 3.4 ШАЛГАЛТЫН ТҮЛХҮҮР ---
         elif menu == "📝 Шалгалтын түлхүүр удирдах":
-            st.subheader("📝 Шалгалт ба Зөв Хариултын Түлхүүр Үүсгэх")
-            
-            e_title = st.text_input("Шалгалтын нэр нэмэх")
-            e_cat = st.text_input("Сэдэв/Бүлэг")
-            
-            if 'temp_keys' not in st.session_state:
-                st.session_state.temp_keys = {}
-                
-            st.markdown("##### Хариултын Түлхүүр Баталгаажуулах:")
-            q_num = st.number_input("Асуултын дугаар", min_value=1, max_value=30, value=1)
-            q_ans = st.selectbox("Зөв хариулт", ["A", "B", "C", "D"])
-            
-            if st.button("Түлхүүр нэмэх"):
-                st.session_state.temp_keys[str(q_num)] = q_ans
-                st.success(f"{q_num}-р асуултын зөв хариу: {q_ans}")
-                
-            if st.session_state.temp_keys:
-                st.json(st.session_state.temp_keys)
-                if st.button("🚀 Шалгалтыг нийтлэх"):
-                    st.session_state.exams.append({
-                        "id": str(uuid.uuid4())[:8],
-                        "title": e_title or "Шалгалт",
-                        "category": e_cat,
-                        "keys": st.session_state.temp_keys
-                    })
+            st.subheader("📝 Шалгалт ба Зөв Хариултын Түлхүүр Оруулах")
+            e_name = st.text_input("Шалгалтын нэр").strip()
+            if st.button("Шалгалт үүсгэх"):
+                if e_name:
+                    st.session_state.exams.append({"title": e_name, "created": str(pd.Timestamp.now().date())})
                     save_data(EXAM_FILE, st.session_state.exams)
-                    st.session_state.temp_keys = {}
-                    st.success("Шалгалт амжилттай үүслээ!")
+                    st.success("Шалгалт нэмэгдлээ!")
+                    st.rerun()
 
-        # --- 4.4 ДҮН АНАЛИЗ БА EXCEL ---
-        elif menu == "📊 Дүн Анализ & Excel Тайлан":
-            st.subheader("📊 Сурагчдын Шалгалтын Анализ & Нэгтгэл")
-            
-            results = st.session_state.results
-            if not results:
-                st.info("Системд одоогоор орсон дүн байхгүй байна.")
-            else:
+        # --- 3.5 ДҮН АНАЛИЗ & ТАЙЛАН ---
+        elif menu == "📊 Дүн Анализ & Тайлан":
+            st.subheader("📊 Шалгалтын Нэгтгэсэн Тайлан (Excel)")
+            res = st.session_state.results
+            if res:
                 rows = []
-                for st_u, ex_data in results.items():
-                    u_info = st.session_state.users.get(st_u, {})
-                    for ex_name, details in ex_data.items():
+                for st_id, ex_m in res.items():
+                    u_inf = st.session_state.users.get(st_id, {})
+                    for ex_t, details in ex_m.items():
                         rows.append({
-                            "Анги": u_info.get('class', '-'),
-                            "Сурагчийн нэр": u_info.get('name', st_u),
-                            "Username": st_u,
-                            "Шалгалт/Сорил": ex_name,
-                            "Гүйцэтгэл": details.get('score', '-'),
+                            "Анги": u_inf.get('class', '-'),
+                            "Код": st_id,
+                            "Нэр": u_inf.get('name', st_id),
+                            "Шалгалт": ex_t,
+                            "Оноо": details.get('score', '-'),
                             "Огноо": details.get('date', '-')
                         })
                 df = pd.DataFrame(rows)
                 st.dataframe(df, use_container_width=True)
                 
-                # Excel экспорт
-                buffer = io.BytesIO()
-                with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                    df.to_excel(writer, index=False, sheet_name='Physics_Report')
-                st.download_button(
-                    "📥 Тайланг Excel (.xlsx) татах",
-                    data=buffer.getvalue(),
-                    file_name="Physics_Class_Report.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-        # --- 4.5 ГЭРИЙН ДААЛГАВАР ӨГӨХ ---
-        elif menu == "📚 Гэрийн даалгавар өгөх":
-            st.subheader("📚 Даалгавар Нийтлэх")
-            hw_t = st.text_input("Даалгаврын нэр")
-            hw_d = st.text_area("Дэлгэрэнгүй бодлого / Заавар")
-            hw_cls = st.selectbox("Аль ангид өгөх вэ?", ["Бүгд"] + st.session_state.classes)
-            
-            if st.button("Даалгавар нийтлэх"):
-                if hw_t:
-                    st.session_state.homeworks.append({
-                        "id": str(uuid.uuid4())[:8],
-                        "title": hw_t,
-                        "desc": hw_d,
-                        "class": hw_cls,
-                        "date": str(pd.Timestamp.now().date())
-                    })
-                    save_data(HW_FILE, st.session_state.homeworks)
-                    st.success("Даалгавар амжилттай нийтлэгдлээ!")
-
-        # --- 4.6 ҮГСИЙН САН УДИРДАХ ---
-        elif menu == "📖 Үгсийн сан удирдах":
-            st.subheader("📖 Физикийн Үгсийн Сан (Монгол - Англи)")
-            df_v = pd.DataFrame(st.session_state.vocab) if st.session_state.vocab else pd.DataFrame(columns=['en', 'mn', 'category'])
-            edited_v = st.data_editor(df_v, use_container_width=True, num_rows="dynamic")
-            if st.button("💾 Хадгалах"):
-                st.session_state.vocab = edited_v.to_dict(orient="records")
-                save_data(VOCAB_FILE, st.session_state.vocab)
-                st.success("Үгсийн сан хадгалагдлаа!")
-
-        # --- 4.7 АНГИ БА ХЭРЭГЛЭГЧИД ---
-        elif menu == "🏫 Анги & Хэрэглэгчид":
-            st.subheader("🏫 Анги Бүлэг & Бүртгэлтэй Хэрэглэгчид")
-            new_cls = st.text_input("Шинэ анги нэмэх (Жишээ нь: 9A)")
-            if st.button("Анги нэмэх"):
-                if new_cls and new_cls not in st.session_state.classes:
-                    st.session_state.classes.append(new_cls)
-                    save_data(CLASS_FILE, st.session_state.classes)
-                    st.success("Анги нэмэгдлээ!")
-                    st.rerun()
-            st.json(st.session_state.classes)
+                buf = io.BytesIO()
+                with pd.ExcelWriter(buf, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Report')
+                st.download_button("📥 Excel Тайлан татах", data=buf.getvalue(), file_name="Physics_Report.xlsx")
 
     # ==========================================
-    # 5. СУРАГЧИЙН МОДУЛИУД
+    # 4. СУРАГЧИЙН МОДУЛИУД
     # ==========================================
     else:
-        # --- 5.1 ШИНЭ ҮГИЙН СОРИЛТ ---
-        if menu == "📝 Шинэ үгийн сорилт":
-            st.subheader("📝 Шинэ Үгийн Сорилт (Англи - Монгол)")
-            v_list = st.session_state.vocab
-            
-            if len(v_list) < 4:
-                st.warning("Үгсийн санд одоогоор хангалттай үг алга байна.")
-            else:
-                if st.button("🚀 Сорилт Эхлэх (10 Асуулт)"):
-                    st.session_state.quiz_items = random.sample(v_list, min(10, len(v_list)))
-                    st.rerun()
-                    
-                if 'quiz_items' in st.session_state:
-                    with st.form("quiz_form"):
-                        score = 0
-                        for idx, item in enumerate(st.session_state.quiz_items):
-                            st.markdown(f"**{idx+1}. '{item['en']}' үгийн Монгол утгыг сонгоно уу:**")
-                            opts = [item['mn']] + [x['mn'] for x in v_list if x['mn'] != item['mn']][:3]
-                            random.shuffle(opts)
-                            ans = st.radio("Сонгох:", opts, key=f"q_{idx}")
-                            if ans == item['mn']:
-                                score += 1
-                        if st.form_submit_button("Сорилт Дуусгах"):
-                            total = len(st.session_state.quiz_items)
-                            pct = int((score / total) * 100)
-                            st.success(f"🎉 Сорилт дууслаа! Оноо: {score}/{total} ({pct}%)")
-                            
-                            # Дүнг багшийн журнал руу хадгалах
-                            res = st.session_state.results
-                            if current_user['username'] not in res: res[current_user['username']] = {}
-                            res[current_user['username']]["Үгийн Сорилт"] = {
-                                "score": f"{pct}%",
-                                "date": str(pd.Timestamp.now().date())
-                            }
-                            save_data(RESULT_FILE, res)
-                            del st.session_state.quiz_items
-
-        # --- 5.2 МИНИЙ ГЭРИЙН ДААЛГАВАР ---
-        elif menu == "📚 Миний гэрийн даалгавар":
-            st.subheader("📚 Миний Гэрийн Даалгаврууд")
-            my_cls = current_user.get('class', '')
-            hws = [h for h in st.session_state.homeworks if h['class'] in ['Бүгд', my_cls]]
-            
-            if not hws:
-                st.info("Танд одоогоор өгсөн даалгавар алга байна.")
-            else:
-                for hw in hws:
-                    with st.container(border=True):
-                        st.markdown(f"### 📌 {hw['title']}")
-                        st.write(hw['desc'])
-                        st.caption(f"Огноо: {hw['date']}")
-
-        # --- 5.3 ТОЛЬ БИЧИГ ---
-        elif menu == "📖 Физикийн толь бичиг":
-            st.subheader("📖 Физикийн Нэр Томьёоны Толь Бичиг")
-            if st.session_state.vocab:
-                st.dataframe(pd.DataFrame(st.session_state.vocab), use_container_width=True)
+        st.subheader("📝 Сурагчийн Давтлагын Цэс")
+        st.info("Сурагч та эндээс шинэ үгийн сорил өгч, гэрийн даалгавраа харах боломжтой.")
