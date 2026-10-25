@@ -115,7 +115,7 @@ else:
         st.success(f"👤 **{user['name']}**\n\nЭрх: `{user['role']}`")
         
         # --- АДМИН ЭРХ СОЛИХ ХЭРЭГСЭЛ (Бүх хэрэглэгч рүү шилжих боломжтой) ---
-        if st.session_state.get('users', {}).get(user.get('username'), {}).get('role') == 'Админ' or user.get('username') == 'batbilegt.ya':
+        if user.get('role') == 'Админ' or user.get('username') == 'batbilegt.ya':
             st.markdown("---")
             st.markdown("🛠️ **Админ тестийн горим:**")
             all_users_dict = st.session_state.users
@@ -257,7 +257,7 @@ else:
             st.markdown("💡 *Багш та хурааж авсан хариултын хуудсыг утсаараа зураг дарж оруулахад систем автоматаар уншиж дүн үүсгэнэ.*")
             
             scan_class = st.selectbox("Анги сонгох:", st.session_state.classes, key="scan_cls")
-            class_students = [k for k, v in st.session_state.users.items() if v.get('role') == 'Сурагч' and v.get('class'] == scan_class]
+            class_students = [k for k, v in st.session_state.users.items() if v.get('role') == 'Сурагч' and v.get('class') == scan_class]
             
             if not class_students:
                 st.warning("Энэ ангид бүртгэлтэй сурагч алга байна.")
